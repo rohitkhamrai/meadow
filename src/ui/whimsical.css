@@ -1,0 +1,801 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Space+Mono:wght@400;700&display=swap');
+
+/* Top Navigation Bar: Room Code & Action Badges */
+.meadow-hud {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+  z-index: 100;
+  gap: 8px;
+}
+
+.meadow-hud-badge {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(22, 28, 20, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(220, 239, 165, 0.28);
+  border-radius: 9999px;
+  padding: 6px 12px;
+  color: #f7f9f2;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.meadow-hud-badge:hover {
+  background: rgba(30, 40, 26, 0.9);
+  border-color: rgba(220, 239, 165, 0.5);
+  transform: translateY(-1px);
+}
+
+.meadow-hud-badge .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #7bd34e;
+  box-shadow: 0 0 8px #7bd34e;
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.meadow-copy-btn {
+  background: rgba(220, 239, 165, 0.15);
+  border: 1px solid rgba(220, 239, 165, 0.35);
+  color: #dcefa5;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-family: inherit;
+  cursor: pointer;
+  margin-left: 4px;
+  transition: all 0.15s ease;
+}
+
+.meadow-copy-btn:hover {
+  background: rgba(220, 239, 165, 0.3);
+}
+
+/* Floating Action Pill for Letter */
+.letter-trigger-btn {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(250, 246, 238, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(195, 175, 140, 0.6);
+  border-radius: 9999px;
+  padding: 6px 14px;
+  color: #3e3223;
+  font-family: 'Newsreader', serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(45, 35, 20, 0.18);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.letter-trigger-btn:hover {
+  background: #fffcf6;
+  transform: translateY(-1px);
+}
+
+/* Floating Voice Mic Button in HUD */
+.hud-mic-btn {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(250, 246, 238, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(195, 175, 140, 0.6);
+  border-radius: 9999px;
+  padding: 6px 14px;
+  color: #3e3223;
+  font-family: 'Newsreader', serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(45, 35, 20, 0.18);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.hud-mic-btn:hover {
+  background: #fffcf6;
+  transform: translateY(-1px);
+}
+
+.hud-mic-btn.active {
+  background: rgba(230, 246, 222, 0.95);
+  border-color: #6a9649;
+  color: #274b13;
+  box-shadow: 0 0 12px rgba(106, 150, 73, 0.4);
+}
+
+.hud-mic-btn.speaking {
+  animation: mic-speaking-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes mic-speaking-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(95, 160, 50, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(95, 160, 50, 0.85);
+    transform: scale(1.03);
+  }
+}
+
+/* Compact, Collapsible Cassette Player (Bottom Docked) */
+.cassette-dock {
+  position: fixed;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: calc(100vw - 28px);
+}
+
+/* Minimized Pill Bar */
+.cassette-minimized-bar {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  background: rgba(30, 36, 26, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(220, 239, 165, 0.35);
+  border-radius: 9999px;
+  padding: 6px 16px;
+  color: #f7f9f2;
+  font-family: 'Newsreader', serif;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.cassette-minimized-bar:hover {
+  background: rgba(38, 48, 32, 0.95);
+  border-color: rgba(220, 239, 165, 0.6);
+  transform: translateY(-1px);
+}
+
+.cassette-dock.minimized .cassette-minimized-bar {
+  display: flex;
+}
+
+.cassette-dock.minimized .cassette-body {
+  display: none;
+}
+
+/* Compact Cassette Body */
+.cassette-body {
+  width: 270px;
+  background: linear-gradient(135deg, #e8dfcc 0%, #d6c6a2 100%);
+  border-radius: 12px;
+  border: 2px solid #b2a078;
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.32),
+    inset 0 1px 3px rgba(255, 255, 255, 0.6),
+    inset 0 -1px 3px rgba(0, 0, 0, 0.15);
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Cassette Corner Screws */
+.cassette-screw {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #9c8c69;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.4);
+}
+.cassette-screw.tl {
+  top: 5px;
+  left: 5px;
+}
+.cassette-screw.tr {
+  top: 5px;
+  right: 5px;
+}
+.cassette-screw.bl {
+  bottom: 5px;
+  left: 5px;
+}
+.cassette-screw.br {
+  bottom: 5px;
+  right: 5px;
+}
+
+/* Minimize Toggle Button */
+.cassette-toggle-btn {
+  position: absolute;
+  top: 5px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  color: #7b6a4a;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+  transition: color 0.15s ease;
+  z-index: 5;
+}
+
+.cassette-toggle-btn:hover {
+  color: #3b2f1e;
+}
+
+/* Cassette Label Area */
+.cassette-label {
+  background: #fdfaf3;
+  border: 1px dashed #bfb089;
+  border-radius: 6px;
+  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cassette-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.cassette-track-title {
+  font-family: 'Newsreader', serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #3b2f1e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 170px;
+}
+
+.cassette-side-tag {
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  color: #8c7750;
+  text-transform: uppercase;
+}
+
+/* Clear Tape Window with Rotating Spools */
+.cassette-window {
+  background: #2a2620;
+  border-radius: 6px;
+  height: 40px;
+  border: 1.5px solid #4a4235;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  position: relative;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+  padding: 0 18px;
+}
+
+.tape-bridge {
+  position: absolute;
+  top: 50%;
+  left: 20%;
+  right: 20%;
+  height: 8px;
+  background: #1c1610;
+  transform: translateY(-50%);
+  border-radius: 2px;
+  z-index: 1;
+}
+
+.cassette-spool {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f0f0ed;
+  border: 2px solid #ceccc4;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spool-center {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2a2620;
+}
+
+.spool-teeth {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px dashed #959288;
+}
+
+.cassette-spool.spinning {
+  animation: spin-spool 2.2s linear infinite;
+}
+
+@keyframes spin-spool {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Controls Bar */
+.cassette-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cassette-play-btn {
+  background: #463b2a;
+  color: #fff9ee;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 11px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.cassette-play-btn:hover {
+  background: #2e261a;
+  transform: scale(1.05);
+}
+
+.cassette-skip-btn {
+  background: #463b2a;
+  color: #fff9ee;
+  border: none;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 11px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.cassette-skip-btn:hover {
+  background: #2e261a;
+  transform: scale(1.05);
+}
+
+.cassette-queue-pill {
+  background: #fdfaf3;
+  border: 1px dashed #bfb089;
+  border-radius: 12px;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 3px 7px;
+  color: #6a593e;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.cassette-queue-pill:hover {
+  background: #f4ecdc;
+  border-color: #8c7750;
+}
+
+.cassette-progress-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cassette-time-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  color: #6a593e;
+}
+
+.cassette-seeker {
+  width: 100%;
+  height: 3px;
+  border-radius: 2px;
+  appearance: none;
+  background: rgba(90, 75, 50, 0.3);
+  outline: none;
+  cursor: pointer;
+}
+
+.cassette-seeker::-webkit-slider-thumb {
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #463b2a;
+  cursor: pointer;
+}
+
+/* YouTube Link Input Row */
+.cassette-input-row {
+  display: flex;
+  gap: 5px;
+}
+
+.cassette-url-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid #b5a47e;
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-family: 'Space Mono', monospace;
+  color: #3b2f1e;
+  outline: none;
+  min-width: 0;
+}
+
+.cassette-url-input:focus {
+  background: #ffffff;
+  border-color: #7b6a4a;
+}
+
+.cassette-load-btn {
+  background: #4b6630;
+  color: #f7faef;
+  border: none;
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-family: 'Newsreader', serif;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.cassette-load-btn:hover {
+  background: #395022;
+}
+
+.cassette-enqueue-btn {
+  background: #735a3d;
+  color: #fbf8f2;
+  border: none;
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-family: 'Newsreader', serif;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.cassette-enqueue-btn:hover {
+  background: #5b462e;
+}
+
+/* Mini Queue Drawer */
+.cassette-queue-drawer {
+  background: #fdfaf4;
+  border: 1px dashed #c4b591;
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 110px;
+  overflow-y: auto;
+  font-size: 9px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.cassette-queue-drawer.hidden {
+  display: none !important;
+}
+
+.cassette-queue-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ebdcc0;
+  padding-bottom: 3px;
+}
+
+.queue-heading {
+  font-family: 'Newsreader', serif;
+  font-weight: 600;
+  font-size: 11px;
+  color: #3b2f1e;
+}
+
+.queue-clear-btn {
+  background: none;
+  border: none;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  color: #a44837;
+  cursor: pointer;
+  padding: 0;
+}
+
+.queue-clear-btn:hover {
+  text-decoration: underline;
+}
+
+.cassette-queue-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.queue-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'Space Mono', monospace;
+  font-size: 8.5px;
+  color: #554734;
+  padding: 2px 0;
+  border-bottom: 1px dotted #ede3ce;
+}
+
+.queue-item:last-child {
+  border-bottom: none;
+}
+
+.queue-item-id {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 170px;
+}
+
+.queue-item-remove {
+  background: none;
+  border: none;
+  color: #8c7750;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.queue-item-remove:hover {
+  color: #c7381b;
+}
+
+/* YouTube Player Host: rendered behind canvas so Chromium does not throttle audio */
+#yt-player-host {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  width: 240px;
+  height: 160px;
+  pointer-events: none;
+  opacity: 0.005;
+  z-index: -10;
+}
+
+/* Digital Letter Modal Overlay */
+.letter-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 24, 16, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.letter-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.letter-stationery {
+  width: 100%;
+  max-width: 480px;
+  max-height: 85dvh;
+  background: #fdfaf3;
+  background-image: repeating-linear-gradient(transparent, transparent 25px, #ebdcc2 26px);
+  line-height: 26px;
+  border-radius: 12px;
+  border: 1px solid #d5c3a3;
+  padding: 24px 28px;
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.35),
+    0 2px 6px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  transform: translateY(16px) scale(0.97);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
+}
+
+.letter-overlay.open .letter-stationery {
+  transform: translateY(0) scale(1);
+}
+
+.letter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #dfcfb2;
+  padding-bottom: 6px;
+}
+
+.letter-heading {
+  font-family: 'Newsreader', serif;
+  font-size: 20px;
+  font-style: italic;
+  font-weight: 600;
+  color: #3b2f1e;
+  margin: 0;
+}
+
+.letter-close-btn {
+  background: #8b3a2b;
+  color: #fcf6ee;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(139, 58, 43, 0.3);
+  transition: transform 0.15s ease;
+}
+
+.letter-close-btn:hover {
+  transform: scale(1.1);
+}
+
+.letter-textarea {
+  width: 100%;
+  min-height: 180px;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: vertical;
+  font-family: 'Caveat', cursive;
+  font-size: 20px;
+  color: #2a2014;
+  line-height: 26px;
+  padding: 0;
+}
+
+.letter-textarea::placeholder {
+  color: #a89578;
+}
+
+.letter-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Newsreader', serif;
+  font-style: italic;
+  font-size: 12px;
+  color: #7a6a4f;
+  margin-top: 4px;
+}
+
+.letter-wax-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #a83222;
+  color: #faede9;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  font-style: normal;
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Mobile Adjustments */
+@media (max-width: 600px) {
+  .cassette-body {
+    width: 250px;
+    padding: 8px 12px;
+    gap: 6px;
+  }
+  .cassette-window {
+    height: 34px;
+  }
+  .cassette-spool {
+    width: 24px;
+    height: 24px;
+  }
+  .meadow-hud {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+  }
+  .meadow-hud-badge {
+    padding: 5px 10px;
+    font-size: 10px;
+  }
+  .letter-trigger-btn {
+    padding: 5px 12px;
+    font-size: 12px;
+  }
+  .letter-stationery {
+    padding: 18px 20px;
+  }
+  .letter-textarea {
+    font-size: 18px;
+    min-height: 140px;
+  }
+}
