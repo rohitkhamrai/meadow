@@ -100,9 +100,11 @@ describe('LudoGame Rules Engine', () => {
     const game = new LudoGame()
     game.addOrUpdatePlayer('p1', 'Rose')
 
-    // Place token 0 at home (56), token 1 at 54
+    // Place tokens 0, 2, 3 at home (56), token 1 at 54
     game.setTokenStep('p1', 0, 56)
     game.setTokenStep('p1', 1, 54)
+    game.setTokenStep('p1', 2, 56)
+    game.setTokenStep('p1', 3, 56)
 
     // Roll exact 2
     const res = game.roll('p1', 2)

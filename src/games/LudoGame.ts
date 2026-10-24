@@ -248,10 +248,12 @@ export class LudoGame {
     const playerIdx = this.state.players.length % LUDO_PALETTE.length
     const palette = LUDO_PALETTE[playerIdx]
 
-    // 2 tokens per player for snappy, cozy parlor play
+    // 4 tokens per player matching classic Ludo
     const tokens: LudoToken[] = [
       { id: 0, step: -1 },
       { id: 1, step: -1 },
+      { id: 2, step: -1 },
+      { id: 3, step: -1 },
     ]
 
     const newPlayer: LudoPlayer = {

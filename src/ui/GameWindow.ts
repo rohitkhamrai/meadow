@@ -677,7 +677,7 @@ export class GameWindow {
             <div class="player-roster-badge ${isActive ? 'active-player' : ''}" style="border-color: ${p.color}">
               <span class="badge-emoji">${p.emoji}</span>
               <span class="badge-name">${p.name} ${isYou ? '(You)' : ''}</span>
-              <span class="badge-pos">${homeTokens}/2 Home</span>
+              <span class="badge-pos">${homeTokens}/${p.tokens.length} Home</span>
             </div>
           `
         })
