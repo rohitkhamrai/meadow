@@ -1,8 +1,9 @@
 # 🌸 Meadow
 
 > A cozy, shared 3D listening meadow for friends to listen to music, talk, and write letters together in real time.
+> ![Meadow Launch Demo](./demo.gif)
 
-![Meadow Cover](./cover.jpeg)
+> 🎬 _Watch with full audio and sound design: [brag.mp4](./brag-output/brag.mp4)_
 
 ---
 
