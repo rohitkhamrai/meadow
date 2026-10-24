@@ -725,6 +725,14 @@ gameWindow.onLudoResetRequest = () => {
   }
 }
 
+gameWindow.onEmojiRequest = (emoji) => {
+  roomSync.broadcast({
+    type: 'GAME_EMOJI',
+    emoji,
+    senderName: roomSync.isHost ? 'Host' : 'Guest',
+  })
+}
+
 // ponytail: Ensure phone speaker loudspeaker mode is set immediately on launch
 setAudioSessionMode('playback')
 
@@ -915,6 +923,9 @@ roomSync.onMessage((msg: RoomMessage) => {
       break
     case 'LUDO_STATE_UPDATE':
       gameWindow.setLudoState(msg.state)
+      break
+    case 'GAME_EMOJI':
+      gameWindow.showEmojiToast(msg.emoji, msg.senderName)
       break
     case 'SYNC_STATE':
       if (msg.videoId && msg.videoId !== ytController.videoId) {

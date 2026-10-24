@@ -28,25 +28,24 @@ export interface TileCoords {
 }
 
 export const SNAKES_AND_LADDERS: Record<number, number> = {
-  // Ladders (Climb Up)
+  // Ladders on bg.jpg (Climb Up)
+  1: 38,
   4: 14,
-  9: 31,
-  20: 38,
-  28: 84,
-  40: 59,
-  51: 67,
-  63: 81,
-  71: 91,
+  8: 30,
+  21: 42,
+  28: 76,
+  50: 67,
+  71: 92,
+  80: 99,
 
-  // Snakes (Slide Down)
-  17: 7,
-  54: 34,
-  62: 19,
-  64: 60,
-  87: 24,
-  93: 73,
-  95: 75,
-  99: 78,
+  // Snakes on bg.jpg (Slide Down)
+  32: 10,
+  36: 6,
+  48: 26,
+  62: 18,
+  88: 24,
+  95: 56,
+  97: 78,
 }
 
 export const AVATAR_PALETTE = [
@@ -100,7 +99,27 @@ export class GameSoundSynthesizer {
     return this.ctx
   }
 
-  playDiceRoll(): void {
+  playAudio(src: string, fallback?: () => void): void {
+    try {
+      const audio = new Audio(src)
+      audio.volume = 0.35
+      const p = audio.play()
+      if (p !== undefined) {
+        p.catch(() => {
+          if (fallback) fallback()
+        })
+      }
+    } catch {
+      if (fallback) fallback()
+    }
+  }
+
+  playDiceRoll(gameType: 'snake' | 'snakes' | 'ludo' = 'snake'): void {
+    const src = gameType === 'ludo' ? '/games/ludo/dice-roll.mp3' : '/games/snake/roll.mp3'
+    this.playAudio(src, () => this.synthesizeDiceNoise())
+  }
+
+  synthesizeDiceNoise(): void {
     const ctx = this.getContext()
     if (!ctx) return
 
@@ -127,25 +146,31 @@ export class GameSoundSynthesizer {
   }
 
   playPawnStep(position: number): void {
-    const ctx = this.getContext()
-    if (!ctx) return
-    const now = ctx.currentTime
+    this.playAudio('/games/snake/move.mp3', () => {
+      const ctx = this.getContext()
+      if (!ctx) return
+      const now = ctx.currentTime
 
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
-    osc.type = 'triangle'
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = 'triangle'
 
-    const pentatonic = [329.63, 392.0, 440.0, 523.25, 659.25]
-    const freq = pentatonic[position % pentatonic.length]
-    osc.frequency.setValueAtTime(freq, now)
+      const pentatonic = [329.63, 392.0, 440.0, 523.25, 659.25]
+      const freq = pentatonic[position % pentatonic.length]
+      osc.frequency.setValueAtTime(freq, now)
 
-    gain.gain.setValueAtTime(0.12, now)
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1)
+      gain.gain.setValueAtTime(0.12, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1)
 
-    osc.connect(gain)
-    gain.connect(ctx.destination)
-    osc.start(now)
-    osc.stop(now + 0.11)
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start(now)
+      osc.stop(now + 0.11)
+    })
+  }
+
+  playBonus(): void {
+    this.playAudio('/games/snake/bonus.mp3', () => this.playSafeStar())
   }
 
   playSafeStar(): void {
@@ -189,66 +214,72 @@ export class GameSoundSynthesizer {
   }
 
   playLadderClimb(): void {
-    const ctx = this.getContext()
-    if (!ctx) return
-    const now = ctx.currentTime
-    const notes = [329.63, 392.0, 523.25, 659.25] // E4, G4, C5, E5
+    this.playAudio('/games/snake/rise.mp3', () => {
+      const ctx = this.getContext()
+      if (!ctx) return
+      const now = ctx.currentTime
+      const notes = [329.63, 392.0, 523.25, 659.25] // E4, G4, C5, E5
 
-    notes.forEach((freq, idx) => {
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-      osc.type = 'triangle'
-      osc.frequency.setValueAtTime(freq, now + idx * 0.08)
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = 'triangle'
+        osc.frequency.setValueAtTime(freq, now + idx * 0.08)
 
-      gain.gain.setValueAtTime(0.1, now + idx * 0.08)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.15)
+        gain.gain.setValueAtTime(0.1, now + idx * 0.08)
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.15)
 
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-      osc.start(now + idx * 0.08)
-      osc.stop(now + idx * 0.08 + 0.16)
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.start(now + idx * 0.08)
+        osc.stop(now + idx * 0.08 + 0.16)
+      })
     })
   }
 
   playSnakeSlide(): void {
-    const ctx = this.getContext()
-    if (!ctx) return
-    const now = ctx.currentTime
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
-
-    osc.type = 'sawtooth'
-    osc.frequency.setValueAtTime(320, now)
-    osc.frequency.exponentialRampToValueAtTime(140, now + 0.28)
-
-    gain.gain.setValueAtTime(0.07, now)
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3)
-
-    osc.connect(gain)
-    gain.connect(ctx.destination)
-    osc.start(now)
-    osc.stop(now + 0.31)
-  }
-
-  playVictory(): void {
-    const ctx = this.getContext()
-    if (!ctx) return
-    const now = ctx.currentTime
-    const notes = [261.63, 329.63, 392.0, 523.25, 659.25, 783.99]
-
-    notes.forEach((freq, idx) => {
+    this.playAudio('/games/snake/fall.mp3', () => {
+      const ctx = this.getContext()
+      if (!ctx) return
+      const now = ctx.currentTime
       const osc = ctx.createOscillator()
       const gain = ctx.createGain()
-      osc.type = 'sine'
-      osc.frequency.setValueAtTime(freq, now + idx * 0.09)
 
-      gain.gain.setValueAtTime(0.12, now + idx * 0.09)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.3)
+      osc.type = 'sawtooth'
+      osc.frequency.setValueAtTime(320, now)
+      osc.frequency.exponentialRampToValueAtTime(140, now + 0.28)
+
+      gain.gain.setValueAtTime(0.07, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3)
 
       osc.connect(gain)
       gain.connect(ctx.destination)
-      osc.start(now + idx * 0.09)
-      osc.stop(now + idx * 0.09 + 0.32)
+      osc.start(now)
+      osc.stop(now + 0.31)
+    })
+  }
+
+  playVictory(): void {
+    this.playAudio('/games/ludo/win.mp3', () => {
+      const ctx = this.getContext()
+      if (!ctx) return
+      const now = ctx.currentTime
+      const notes = [261.63, 329.63, 392.0, 523.25, 659.25, 783.99]
+
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(freq, now + idx * 0.09)
+
+        gain.gain.setValueAtTime(0.12, now + idx * 0.09)
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.3)
+
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.start(now + idx * 0.09)
+        osc.stop(now + idx * 0.09 + 0.32)
+      })
     })
   }
 }

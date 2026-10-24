@@ -76,14 +76,14 @@ describe('SnakesGame Rules & Turn Engine', () => {
     game.addOrUpdatePlayer('p1', 'Alice')
     game.addOrUpdatePlayer('p2', 'Bob')
 
-    // Set position to 15, roll 2 -> 17 (Snake mouth to 7)
-    expect(SNAKES_AND_LADDERS[17]).toBe(7)
-    game.setPlayerPosition('p1', 15)
+    // Set position to 30, roll 2 -> 32 (Snake mouth to 10 on bg.jpg)
+    expect(SNAKES_AND_LADDERS[32]).toBe(10)
+    game.setPlayerPosition('p1', 30)
 
     const res = game.roll('p1', 2)
     expect(res.slidSnake).toBe(true)
     expect(res.climbedLadder).toBe(false)
-    expect(res.state.players[0].position).toBe(7)
+    expect(res.state.players[0].position).toBe(10)
     // Rolled a 2, turn should pass to Bob (p2)
     expect(res.state.activePlayerIndex).toBe(1)
   })

@@ -53,6 +53,11 @@ export type RoomMessage =
       type: 'LUDO_STATE_UPDATE'
       state: LudoGameState
     }
+  | {
+      type: 'GAME_EMOJI'
+      emoji: string
+      senderName: string
+    }
 
 export type RoomListener = (message: RoomMessage, isSelf: boolean) => void
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error'

@@ -123,6 +123,8 @@ export const LUDO_PALETTE: Array<{
     homeTarget: { col: 6, row: 7 },
     yardSlots: [
       { col: 2, row: 2 },
+      { col: 3, row: 2 },
+      { col: 2, row: 3 },
       { col: 3, row: 3 },
     ],
   },
@@ -141,6 +143,8 @@ export const LUDO_PALETTE: Array<{
     homeTarget: { col: 7, row: 6 },
     yardSlots: [
       { col: 11, row: 2 },
+      { col: 12, row: 2 },
+      { col: 11, row: 3 },
       { col: 12, row: 3 },
     ],
   },
@@ -159,6 +163,8 @@ export const LUDO_PALETTE: Array<{
     homeTarget: { col: 8, row: 7 },
     yardSlots: [
       { col: 11, row: 11 },
+      { col: 12, row: 11 },
+      { col: 11, row: 12 },
       { col: 12, row: 12 },
     ],
   },
@@ -177,6 +183,8 @@ export const LUDO_PALETTE: Array<{
     homeTarget: { col: 7, row: 8 },
     yardSlots: [
       { col: 2, row: 11 },
+      { col: 3, row: 11 },
+      { col: 2, row: 12 },
       { col: 3, row: 12 },
     ],
   },

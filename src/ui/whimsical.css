@@ -1014,53 +1014,30 @@
   position: relative;
   border-radius: 12px;
   overflow: hidden;
-  border: 1.5px solid rgba(245, 215, 160, 0.35);
-  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.45);
-  margin-bottom: 10px;
-  background: #181410;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  margin-bottom: 8px;
   flex-shrink: 0;
+  user-select: none;
 }
 
-.game-board-grid {
+/* --- Snake and Ladder Authentic Design (web-game-snake-ladder) --- */
+.game-board-wrapper.snakes-mode {
+  background-color: saddlebrown;
+  border: 4px solid #6d3209;
+  box-shadow:
+    0 8px 25px rgba(0, 0, 0, 0.6),
+    inset 0 0 10px rgba(0, 0, 0, 0.4);
+}
+
+.game-board-grid.snakes-grid {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
   grid-template-rows: repeat(10, 1fr);
   width: 100%;
   height: 100%;
-}
-
-.game-board-cell {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  padding: 2px 3px;
-  font-family: 'Space Mono', monospace;
-  font-size: 7.5px;
-  border: 0.5px solid rgba(255, 255, 255, 0.05);
-  user-select: none;
-}
-
-.cell-light {
-  background: rgba(255, 248, 235, 0.05);
-  color: rgba(255, 240, 210, 0.5);
-}
-
-.cell-dark {
-  background: rgba(0, 0, 0, 0.2);
-  color: rgba(255, 240, 210, 0.35);
-}
-
-.game-board-cell[data-tile='100'] {
-  background: rgba(245, 158, 11, 0.18);
-  color: #fef08a;
-  font-weight: bold;
-}
-
-.game-board-cell[data-tile='1'] {
-  background: rgba(16, 185, 129, 0.18);
-  color: #6ee7b7;
-  font-weight: bold;
+  background-image: url('/games/snake/bg.jpg');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
 }
 
 .game-board-svg {
@@ -1080,9 +1057,10 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 3;
+  z-index: 5;
 }
 
+/* Authentic Pawns */
 .game-pawn {
   position: absolute;
   width: 22px;
@@ -1091,130 +1069,489 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 10px;
   transform: translate(-50%, -50%);
   transition:
-    left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
-    top 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    left 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+    top 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow:
-    0 4px 10px rgba(0, 0, 0, 0.5),
-    inset 0 1px 2px rgba(255, 255, 255, 0.6);
-  border: 1.5px solid #fff;
+    0 3px 8px rgba(0, 0, 0, 0.5),
+    inset 0 2px 2px rgba(255, 255, 255, 0.7);
+  border: 2px solid #ffffff;
   pointer-events: auto;
   cursor: pointer;
 }
 
+.game-pawn .pawn-player-name {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  color: #111;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 1px 4px;
+  border-radius: 4px;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
 .game-pawn.active {
   box-shadow:
-    0 0 14px rgba(245, 158, 11, 0.8),
+    0 0 0 4px goldenrod,
     0 4px 10px rgba(0, 0, 0, 0.5);
-  transform: translate(-50%, -50%) scale(1.15);
+  animation: pawn-pulse 1s infinite alternate;
 }
 
-.game-event-log {
-  font-family: 'Newsreader', serif;
-  font-style: italic;
-  font-size: 12px;
-  text-align: center;
-  color: #f5eedc;
-  min-height: 20px;
-  margin-bottom: 8px;
-  flex-shrink: 0;
+@keyframes pawn-pulse {
+  0% {
+    box-shadow: 0 0 0 2px goldenrod;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+  100% {
+    box-shadow: 0 0 0 7px rgba(218, 165, 32, 0);
+    transform: translate(-50%, -50%) scale(1.15);
+  }
 }
 
-.game-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
-  flex-shrink: 0;
+/* --- Ludo Classic Authentic Design (ludo-classic) --- */
+.game-board-wrapper.ludo-mode {
+  background: #f1f5f9;
+  border: 3px solid #cbd5e1;
 }
 
-.game-dice-wrapper {
-  width: 44px;
-  height: 44px;
-  perspective: 300px;
-  flex-shrink: 0;
-}
-
-.game-dice {
+.game-board-grid.ludo-grid {
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+  grid-template-rows: repeat(15, 1fr);
   width: 100%;
   height: 100%;
-  background: #fdfaf4;
-  border-radius: 10px;
-  border: 1.5px solid #d4b483;
-  box-shadow:
-    0 4px 8px rgba(0, 0, 0, 0.35),
-    inset 0 1px 3px rgba(255, 255, 255, 0.8);
+  background: #ffffff;
+  gap: 1px;
+}
+
+.ludo-cell {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s;
+  font-size: 8px;
+  user-select: none;
 }
 
-.game-dice.rolling {
-  animation: dice-tumble 0.45s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+/* 4 Corner Home Cards */
+.ludo-home-card {
+  position: relative;
+  border-radius: 8px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
 }
 
-@keyframes dice-tumble {
+.ludo-home-card.card-red {
+  grid-column: 1 / 7;
+  grid-row: 1 / 7;
+  background: linear-gradient(135deg, #b71c1c, #c62828);
+}
+
+.ludo-home-card.card-green {
+  grid-column: 10 / 16;
+  grid-row: 1 / 7;
+  background: linear-gradient(135deg, #1b5e20, #2e7d32);
+}
+
+.ludo-home-card.card-yellow {
+  grid-column: 10 / 16;
+  grid-row: 10 / 16;
+  background: linear-gradient(135deg, #e65100, #f9a825);
+}
+
+.ludo-home-card.card-blue {
+  grid-column: 1 / 7;
+  grid-row: 10 / 16;
+  background: linear-gradient(135deg, #0d47a1, #1565c0);
+}
+
+.home-inner-box {
+  background: #ffffff;
+  border-radius: 6px;
+  width: 75%;
+  height: 75%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 6px;
+  padding: 6px;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.home-nest {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-nest.nest-red {
+  border: 2px solid #b71c1c;
+  background: rgba(183, 28, 28, 0.12);
+}
+.home-nest.nest-green {
+  border: 2px solid #1b5e20;
+  background: rgba(27, 94, 32, 0.12);
+}
+.home-nest.nest-yellow {
+  border: 2px solid #e65100;
+  background: rgba(230, 81, 0, 0.12);
+}
+.home-nest.nest-blue {
+  border: 2px solid #0d47a1;
+  background: rgba(13, 71, 161, 0.12);
+}
+
+/* Center Win House */
+.ludo-win-house {
+  grid-column: 7 / 10;
+  grid-row: 7 / 10;
+  position: relative;
+  background: #f5f0e8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.win-triangle {
+  position: absolute;
+  inset: 0;
+}
+
+.win-triangle.tri-red {
+  clip-path: polygon(0 0, 50% 50%, 0 100%);
+  background: #c62828;
+}
+.win-triangle.tri-green {
+  clip-path: polygon(0 0, 100% 0, 50% 50%);
+  background: #2e7d32;
+}
+.win-triangle.tri-yellow {
+  clip-path: polygon(100% 0, 100% 100%, 50% 50%);
+  background: #f9a825;
+}
+.win-triangle.tri-blue {
+  clip-path: polygon(0 100%, 50% 50%, 100% 100%);
+  background: #1565c0;
+}
+
+.win-trophy {
+  position: relative;
+  z-index: 5;
+  font-size: 20px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+/* Ludo Track Cells */
+.ludo-cell.p {
+  background: #f5f0e8;
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+}
+
+.ludo-cell.f-r {
+  background: #c62828 !important;
+  border: 0.5px solid #b71c1c;
+}
+.ludo-cell.f-g {
+  background: #2e7d32 !important;
+  border: 0.5px solid #1b5e20;
+}
+.ludo-cell.f-y {
+  background: #f9a825 !important;
+  border: 0.5px solid #e65100;
+}
+.ludo-cell.f-b {
+  background: #1565c0 !important;
+  border: 0.5px solid #0d47a1;
+}
+
+.ludo-cell.s-r {
+  background: #c62828 !important;
+  color: #fff;
+  font-weight: bold;
+}
+.ludo-cell.s-g {
+  background: #2e7d32 !important;
+  color: #fff;
+  font-weight: bold;
+}
+.ludo-cell.s-y {
+  background: #f9a825 !important;
+  color: #fff;
+  font-weight: bold;
+}
+.ludo-cell.s-b {
+  background: #1565c0 !important;
+  color: #fff;
+  font-weight: bold;
+}
+
+.ludo-cell.safe-star {
+  color: #e8b800;
+  font-size: 13px;
+  font-weight: 900;
+  text-shadow: 0 0 6px rgba(232, 184, 0, 0.7);
+}
+
+/* Ludo Goties (3D Radial Spheres) */
+.ludo-goti {
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  position: absolute;
+  transform: translate(-50%, -50%);
+  transition:
+    left 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+    top 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: auto;
+  cursor: default;
+  z-index: 5;
+}
+
+.ludo-goti.goti-red {
+  background: radial-gradient(circle at 35% 35%, #ff8a80, #b71c1c);
+}
+.ludo-goti.goti-green {
+  background: radial-gradient(circle at 35% 35%, #69f0ae, #1b5e20);
+}
+.ludo-goti.goti-yellow {
+  background: radial-gradient(circle at 35% 35%, #ffe57f, #e65100);
+}
+.ludo-goti.goti-blue {
+  background: radial-gradient(circle at 35% 35%, #82b1ff, #0d47a1);
+}
+
+.ludo-goti.selectable {
+  animation: goti-pulse 0.7s ease-in-out infinite alternate;
+  cursor: pointer;
+  z-index: 25;
+}
+
+@keyframes goti-pulse {
   0% {
-    transform: rotate(0deg) scale(0.9);
-  }
-  50% {
-    transform: rotate(180deg) scale(1.2);
+    box-shadow:
+      0 0 0 0 rgba(255, 255, 0, 0.9),
+      0 2px 6px rgba(0, 0, 0, 0.4);
+    transform: translate(-50%, -50%) scale(1.08);
   }
   100% {
-    transform: rotate(360deg) scale(1);
+    box-shadow:
+      0 0 0 8px rgba(255, 255, 0, 0),
+      0 2px 6px rgba(0, 0, 0, 0.4);
+    transform: translate(-50%, -50%) scale(1.22);
   }
 }
 
-.dice-pip {
+.stack-badge {
   position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ffffff;
+  color: #111111;
+  border-radius: 50%;
+  width: 13px;
+  height: 13px;
+  font-size: 8px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
+/* --- 3D CSS Rolling Dice Scene --- */
+.game-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.dice-scene {
+  width: 38px;
+  height: 38px;
+  perspective: 180px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.dice-cube {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateX(-20deg) rotateY(30deg);
+  transition: transform 0.25s ease-out;
+}
+
+.dice-cube.spinning {
+  animation: dRoll 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes dRoll {
+  0% {
+    transform: rotateX(-20deg) rotateY(30deg);
+  }
+  20% {
+    transform: rotateX(200deg) rotateY(150deg) rotateZ(60deg);
+  }
+  50% {
+    transform: rotateX(500deg) rotateY(400deg) rotateZ(180deg);
+  }
+  80% {
+    transform: rotateX(680deg) rotateY(560deg) rotateZ(240deg);
+  }
+  100% {
+    transform: var(--df, rotateX(-20deg) rotateY(30deg));
+  }
+}
+
+.dice-face {
+  position: absolute;
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  background: #fdfaf4;
+  border: 1.5px solid rgba(0, 0, 0, 0.18);
+  display: grid;
+  padding: 4px;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.15);
+  box-sizing: border-box;
+}
+
+.face-1 {
+  transform: translateZ(19px);
+  grid-template-areas: '. . .' '. c .' '. . .';
+}
+.face-6 {
+  transform: rotateY(180deg) translateZ(19px);
+  grid-template-areas: 'a . b' 'c . d' 'e . f';
+}
+.face-2 {
+  transform: rotateY(90deg) translateZ(19px);
+  grid-template-areas: '. . a' '. . .' 'b . .';
+}
+.face-5 {
+  transform: rotateY(-90deg) translateZ(19px);
+  grid-template-areas: 'a . b' '. c .' 'd . e';
+}
+.face-3 {
+  transform: rotateX(-90deg) translateZ(19px);
+  grid-template-areas: '. . a' '. c .' 'b . .';
+}
+.face-4 {
+  transform: rotateX(90deg) translateZ(19px);
+  grid-template-areas: 'a . b' '. . .' 'c . d';
+}
+
+.dice-face .dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #991b1b;
+  background: #1a1a1a;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  justify-self: center;
+  align-self: center;
 }
 
-.dice-pip.top-left {
-  top: 7px;
-  left: 7px;
+.face-1 .dot {
+  background: #dc2626;
+  width: 8px;
+  height: 8px;
 }
-.dice-pip.top-right {
-  top: 7px;
-  right: 7px;
+
+.face-1 .dot:nth-child(1) {
+  grid-area: c;
 }
-.dice-pip.mid-left {
-  top: 19px;
-  left: 7px;
+.face-2 .dot:nth-child(1) {
+  grid-area: a;
 }
-.dice-pip.mid-right {
-  top: 19px;
-  right: 7px;
+.face-2 .dot:nth-child(2) {
+  grid-area: b;
 }
-.dice-pip.center {
-  top: 19px;
-  left: 19px;
+.face-3 .dot:nth-child(1) {
+  grid-area: a;
 }
-.dice-pip.bottom-left {
-  bottom: 7px;
-  left: 7px;
+.face-3 .dot:nth-child(2) {
+  grid-area: c;
 }
-.dice-pip.bottom-right {
-  bottom: 7px;
-  right: 7px;
+.face-3 .dot:nth-child(3) {
+  grid-area: b;
+}
+.face-4 .dot:nth-child(1) {
+  grid-area: a;
+}
+.face-4 .dot:nth-child(2) {
+  grid-area: b;
+}
+.face-4 .dot:nth-child(3) {
+  grid-area: c;
+}
+.face-4 .dot:nth-child(4) {
+  grid-area: d;
+}
+.face-5 .dot:nth-child(1) {
+  grid-area: a;
+}
+.face-5 .dot:nth-child(2) {
+  grid-area: b;
+}
+.face-5 .dot:nth-child(3) {
+  grid-area: c;
+}
+.face-5 .dot:nth-child(4) {
+  grid-area: d;
+}
+.face-5 .dot:nth-child(5) {
+  grid-area: e;
+}
+.face-6 .dot:nth-child(1) {
+  grid-area: a;
+}
+.face-6 .dot:nth-child(2) {
+  grid-area: b;
+}
+.face-6 .dot:nth-child(3) {
+  grid-area: c;
+}
+.face-6 .dot:nth-child(4) {
+  grid-area: d;
+}
+.face-6 .dot:nth-child(5) {
+  grid-area: e;
+}
+.face-6 .dot:nth-child(6) {
+  grid-area: f;
 }
 
 .game-roll-btn {
   flex: 1;
-  padding: 10px 16px;
+  padding: 9px 16px;
   background: linear-gradient(135deg, #453424 0%, #2f2317 100%);
   border: 1.5px solid #d4b483;
   border-radius: 12px;
   color: #fff6e5;
   font-family: 'Newsreader', serif;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
@@ -1232,20 +1569,100 @@
   cursor: not-allowed;
 }
 
-.game-roll-btn.pulse {
-  animation: roll-pulse 1.8s infinite;
+/* --- Floating Emoji Reaction Bar & Toasts --- */
+.game-emoji-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3px;
+  margin-top: 6px;
+  padding: 4px 6px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  border: 1px solid rgba(245, 215, 160, 0.15);
+  flex-shrink: 0;
 }
 
-@keyframes roll-pulse {
+.game-emoji-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  padding: 2px 4px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition:
+    transform 0.15s,
+    background 0.15s;
+  line-height: 1;
+}
+
+.game-emoji-btn:hover {
+  transform: scale(1.3);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.game-emoji-btn:active {
+  transform: scale(0.9);
+}
+
+.emoji-toast {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  animation: etoast 2.2s ease forwards;
+  pointer-events: none;
+  z-index: 100;
+}
+
+@keyframes etoast {
   0% {
-    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+    opacity: 0;
+    transform: scale(0.4) translateY(0);
   }
-  70% {
-    box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+  12% {
+    opacity: 1;
+    transform: scale(1.2) translateY(-6px);
+  }
+  25% {
+    transform: scale(1) translateY(-14px);
+  }
+  75% {
+    opacity: 1;
+    transform: scale(1) translateY(-60px);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+    opacity: 0;
+    transform: scale(0.7) translateY(-100px);
   }
+}
+
+.emoji-toast-icon {
+  font-size: 28px;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.4));
+}
+
+.emoji-toast-name {
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+/* Event Log & Player Badges */
+.game-event-log {
+  font-family: 'Newsreader', serif;
+  font-style: italic;
+  font-size: 12px;
+  text-align: center;
+  color: #f5eedc;
+  min-height: 18px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
 }
 
 .game-players-list {
@@ -1259,7 +1676,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 8px;
+  padding: 3px 8px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -1310,11 +1727,9 @@
     width: auto;
     min-width: auto;
     max-height: 65vh;
-    padding: 12px;
+    padding: 10px;
   }
 }
-
-/* --- Parlor Game Tabs & Ludo Board Styles --- */
 
 .game-tabs {
   display: flex;
@@ -1346,116 +1761,4 @@
   border: 1px solid rgba(245, 158, 11, 0.5);
   color: #fff;
   font-weight: 600;
-}
-
-.game-board-grid.ludo-grid {
-  grid-template-columns: repeat(15, 1fr);
-  grid-template-rows: repeat(15, 1fr);
-  background: #15110d;
-}
-
-.ludo-cell {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 0.5px solid rgba(255, 255, 255, 0.05);
-  font-size: 9px;
-  user-select: none;
-}
-
-.ludo-yard {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.yard-rose {
-  background: rgba(244, 63, 94, 0.2);
-}
-.yard-sage {
-  background: rgba(16, 185, 129, 0.2);
-}
-.yard-buttercup {
-  background: rgba(245, 158, 11, 0.2);
-}
-.yard-iris {
-  background: rgba(139, 92, 246, 0.2);
-}
-
-.yard-nest {
-  background: rgba(0, 0, 0, 0.45) !important;
-  border: 1.5px dashed rgba(255, 255, 255, 0.35) !important;
-  border-radius: 50%;
-}
-
-.ludo-home-triangle {
-  background: radial-gradient(circle, #f59e0b 0%, #78350f 100%);
-  color: #fef08a;
-  font-size: 11px;
-}
-
-.runway-rose {
-  background: rgba(244, 63, 94, 0.55);
-}
-.runway-sage {
-  background: rgba(16, 185, 129, 0.55);
-}
-.runway-buttercup {
-  background: rgba(245, 158, 11, 0.55);
-}
-.runway-iris {
-  background: rgba(139, 92, 246, 0.55);
-}
-
-.ludo-track-cell {
-  background: rgba(255, 248, 235, 0.06);
-}
-
-.ludo-safe-star {
-  color: #f59e0b;
-  font-size: 10px;
-  font-weight: bold;
-}
-
-.ludo-pawn {
-  width: 17px;
-  height: 17px;
-  font-size: 9.5px;
-  border-radius: 50%;
-  border: 1.5px solid #ffffff !important;
-  box-shadow:
-    0 3px 8px rgba(0, 0, 0, 0.5),
-    inset 0 1.5px 2px rgba(255, 255, 255, 0.8),
-    inset 0 -1.5px 2px rgba(0, 0, 0, 0.3) !important;
-}
-
-.ludo-pawn.pawn-rose {
-  background: radial-gradient(circle at 35% 35%, #ff8a80 0%, #b71c1c 100%) !important;
-}
-.ludo-pawn.pawn-sage {
-  background: radial-gradient(circle at 35% 35%, #69f0ae 0%, #1b5e20 100%) !important;
-}
-.ludo-pawn.pawn-buttercup {
-  background: radial-gradient(circle at 35% 35%, #ffe57f 0%, #e65100 100%) !important;
-}
-.ludo-pawn.pawn-iris {
-  background: radial-gradient(circle at 35% 35%, #82b1ff 0%, #0d47a1 100%) !important;
-}
-
-.eligible-token {
-  cursor: pointer;
-  animation: token-eligible-bounce 0.9s infinite alternate;
-  box-shadow:
-    0 0 14px #f59e0b,
-    0 0 24px rgba(245, 158, 11, 0.8) !important;
-  border: 2px solid #fff !important;
-  z-index: 10;
-}
-
-@keyframes token-eligible-bounce {
-  0% {
-    transform: translate(-50%, -50%) scale(1.1);
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(1.35);
-  }
 }
