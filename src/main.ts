@@ -493,25 +493,35 @@ gui.add({ reset: resetControls }, 'reset').name('Reset')
 syncSceneStats()
 
 // --- Whimsical Listening Room Integration ---
-const hashMatch = window.location.hash.match(/room=([a-zA-Z0-9_-]+)/)
-let roomId: string
-let isHost = false
+const hash = window.location.hash.slice(1)
+const hashParams = new URLSearchParams(hash)
+const urlRoom = hashParams.get('room')
+const urlKey = hashParams.get('key')
 
-if (hashMatch && hashMatch[1]) {
-  roomId = hashMatch[1]
-  isHost = false
+let roomId: string
+let roomKey: string | undefined = urlKey || undefined
+const action: 'create' | 'join' = urlRoom && urlKey ? 'join' : 'create'
+
+if (urlRoom) {
+  roomId = urlRoom
 } else {
   roomId = 'iris-' + Math.random().toString(36).slice(2, 8)
-  isHost = true
-  window.location.hash = `room=${roomId}`
 }
+
+const savedHostKey = localStorage.getItem(`meadow_host_${roomId}`) || undefined
+
+const roomSync = new LiveKitRoom(roomId, {
+  roomKey,
+  hostKey: savedHostKey,
+  action,
+})
 
 const hud = document.createElement('div')
 hud.className = 'meadow-hud'
 hud.innerHTML = `
-  <div class="meadow-hud-badge" id="meadow-room-badge" title="Click to copy invite link">
+  <div class="meadow-hud-badge" id="meadow-room-badge" title="Click to copy invite link or reconnect">
     <span class="dot"></span>
-    <span id="room-badge-text">Room: #${roomId}</span>
+    <span id="room-badge-text">Connecting to #${roomId}...</span>
     <button class="meadow-copy-btn" id="room-copy-btn">Copy Link</button>
   </div>
   <div style="display: flex; gap: 8px; pointer-events: auto;">
@@ -530,25 +540,73 @@ const ytHost = document.createElement('div')
 ytHost.id = 'yt-player-host'
 document.body.appendChild(ytHost)
 
-const roomSync = new LiveKitRoom(roomId, isHost)
 const ytController = new YouTubeController('yt-player-host')
 const cassette = new CassetteDeck(document.body)
 const letterModal = new DigitalLetterModal(document.body)
 
+roomSync.onCredentials((key, hostKey) => {
+  roomKey = key
+  if (hostKey) {
+    localStorage.setItem(`meadow_host_${roomId}`, hostKey)
+  }
+  const newHash = `room=${roomId}&key=${key}`
+  if (window.location.hash !== `#${newHash}`) {
+    history.replaceState(null, '', `#${newHash}`)
+  }
+})
+
+let currentParticipantCount = 1
+
+function updateBadgeDisplay(status: string, errMessage?: string) {
+  const badge = document.getElementById('meadow-room-badge')
+  const badgeText = document.getElementById('room-badge-text')
+  if (!badgeText || !badge) return
+
+  if (status === 'connected') {
+    badge.classList.remove('offline')
+    const roleLabel = roomSync.isHost ? 'Host' : 'Guest'
+    badgeText.textContent = `Room: #${roomId} (${roleLabel} • ${currentParticipantCount} online)`
+  } else if (status === 'connecting') {
+    badge.classList.remove('offline')
+    badgeText.textContent = `Connecting voice...`
+  } else {
+    badge.classList.add('offline')
+    badgeText.textContent = `⚠️ Voice Offline (${errMessage || 'Click to reconnect'})`
+  }
+}
+
+roomSync.onConnectionStatusChange((status, err) => {
+  updateBadgeDisplay(status, err)
+})
+
+roomSync.onParticipantCountChange((count) => {
+  currentParticipantCount = count
+  updateBadgeDisplay(roomSync.status)
+})
+
 const copyBtn = document.getElementById('room-copy-btn')
 const copyLink = () => {
-  navigator.clipboard.writeText(window.location.href).then(() => {
+  const inviteUrl = `${window.location.origin}${window.location.pathname}#room=${roomId}&key=${roomKey || ''}`
+  navigator.clipboard.writeText(inviteUrl).then(() => {
     if (copyBtn) copyBtn.textContent = 'Copied! ✨'
     setTimeout(() => {
       if (copyBtn) copyBtn.textContent = 'Copy Link'
     }, 2000)
   })
 }
+
 copyBtn?.addEventListener('click', (e) => {
   e.stopPropagation()
   copyLink()
 })
-document.getElementById('meadow-room-badge')?.addEventListener('click', copyLink)
+
+document.getElementById('meadow-room-badge')?.addEventListener('click', () => {
+  if (roomSync.status !== 'connected') {
+    void roomSync.connect()
+  } else {
+    copyLink()
+  }
+})
 
 document.getElementById('letter-trigger-btn')?.addEventListener('click', () => {
   letterModal.toggle()
@@ -577,7 +635,7 @@ micBtn.addEventListener('click', async () => {
     }
   } catch (err) {
     console.warn('Microphone error:', err)
-    alert('Please allow microphone permissions in your browser to talk in the meadow!')
+    alert(err instanceof Error ? err.message : 'Please allow microphone permissions to speak!')
   }
 })
 
@@ -589,33 +647,42 @@ roomSync.onActiveSpeakersChange((speakers) => {
   }
 })
 
-roomSync.onParticipantCountChange((count) => {
-  const badgeText = document.getElementById('room-badge-text')
-  if (badgeText) {
-    badgeText.textContent = `Room: #${roomId} (${count} online)`
-  }
-})
-
 cassette.onVolumeChange = (vol) => {
   ytController.setVolume(vol)
 }
 
 cassette.onPlayRequest = () => {
+  if (!roomSync.isHost) {
+    alert('Only the room host can control master playback. You can add songs to the Queue!')
+    return
+  }
   ytController.play()
   roomSync.broadcast({ type: 'PLAY', time: ytController.getCurrentTime() })
 }
 
 cassette.onPauseRequest = () => {
+  if (!roomSync.isHost) {
+    alert('Only the room host can pause playback. You can add songs to the Queue!')
+    return
+  }
   ytController.pause()
   roomSync.broadcast({ type: 'PAUSE', time: ytController.getCurrentTime() })
 }
 
 cassette.onSeekRequest = (time: number) => {
+  if (!roomSync.isHost) {
+    alert('Only the room host can scrub the tape.')
+    return
+  }
   ytController.seekTo(time)
   roomSync.broadcast({ type: 'SEEK', time })
 }
 
 cassette.onLoadTrackRequest = (videoId: string) => {
+  if (!roomSync.isHost) {
+    cassette.enqueue([videoId])
+    return
+  }
   ytController.loadTrack(videoId, 0, true)
   cassette.setTrackTitle('Loading tape...')
   roomSync.broadcast({

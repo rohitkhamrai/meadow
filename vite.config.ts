@@ -18,6 +18,10 @@ export default defineConfig(({ mode }) => {
                 const username =
                   url.searchParams.get('username') ||
                   `meadow-${Math.random().toString(36).slice(2, 7)}`
+                const action = url.searchParams.get('action')
+                const key = url.searchParams.get('key')
+                const hostKey = url.searchParams.get('hostKey')
+                const password = url.searchParams.get('pass')
 
                 const apiKey = env.LIVEKIT_API_KEY || process.env.LIVEKIT_API_KEY
                 const apiSecret = env.LIVEKIT_API_SECRET || process.env.LIVEKIT_API_SECRET
@@ -34,12 +38,50 @@ export default defineConfig(({ mode }) => {
                   return
                 }
 
+                const crypto = await import('node:crypto')
+                const computeSecret = (prefix: string, len: number) =>
+                  crypto
+                    .createHmac('sha256', apiSecret)
+                    .update(`${prefix}:${room}`)
+                    .digest('hex')
+                    .slice(0, len)
+
+                const expectedRoomSecret = computeSecret('room', 12)
+                const expectedHostSecret = computeSecret('host', 16)
+                const serverPassword = env.ROOM_PASSWORD || process.env.ROOM_PASSWORD
+
+                let isHost = false
+
+                if (action === 'create') {
+                  isHost = true
+                } else {
+                  const isKeyValid = key && key === expectedRoomSecret
+                  const isPassValid = password && serverPassword && password === serverPassword
+
+                  if (!isKeyValid && !isPassValid) {
+                    res.statusCode = 403
+                    res.setHeader('Content-Type', 'application/json')
+                    res.end(
+                      JSON.stringify({
+                        error:
+                          'Access denied: Invalid or missing room secret key. Please use the complete room invite link.',
+                      }),
+                    )
+                    return
+                  }
+
+                  if (hostKey && hostKey === expectedHostSecret) {
+                    isHost = true
+                  }
+                }
+
                 try {
-                  // ponytail: Issue 6h join token signed with LiveKit secret
+                  // ponytail: Issue 6h join token signed with LiveKit secret and verified role metadata
                   const at = new AccessToken(apiKey, apiSecret, {
                     identity: username,
                     name: username,
                     ttl: '6h',
+                    metadata: JSON.stringify({ isHost, room }),
                   })
                   at.addGrant({
                     room,
@@ -47,12 +89,22 @@ export default defineConfig(({ mode }) => {
                     canPublish: true,
                     canSubscribe: true,
                     canPublishData: true,
+                    roomAdmin: isHost,
                   })
                   const token = await at.toJwt()
 
                   res.statusCode = 200
                   res.setHeader('Content-Type', 'application/json')
-                  res.end(JSON.stringify({ token, url: livekitUrl, username }))
+                  res.end(
+                    JSON.stringify({
+                      token,
+                      url: livekitUrl,
+                      username,
+                      isHost,
+                      roomKey: expectedRoomSecret,
+                      hostKey: isHost ? expectedHostSecret : undefined,
+                    }),
+                  )
                 } catch (err: unknown) {
                   res.statusCode = 500
                   res.setHeader('Content-Type', 'application/json')

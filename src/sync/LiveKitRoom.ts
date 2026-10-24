@@ -27,6 +27,14 @@ export type RoomMessage =
     }
 
 export type RoomListener = (message: RoomMessage, isSelf: boolean) => void
+export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error'
+export type ConnectionStatusListener = (status: ConnectionStatus, errorMsg?: string) => void
+
+export interface LiveKitRoomOptions {
+  roomKey?: string
+  hostKey?: string
+  action?: 'create' | 'join'
+}
 
 /**
  * LiveKit SFU Room client: Handles multi-user WebRTC voice chat and low-latency
@@ -34,7 +42,13 @@ export type RoomListener = (message: RoomMessage, isSelf: boolean) => void
  */
 export class LiveKitRoom {
   readonly roomId: string
-  readonly isHost: boolean
+  private isHostRole = false
+  private roomKey?: string
+  private hostKey?: string
+  private action: 'create' | 'join'
+  private connectionStatus: ConnectionStatus = 'connecting'
+  private connectionStatusListeners: ConnectionStatusListener[] = []
+  private credentialListeners: ((roomKey: string, hostKey?: string) => void)[] = []
   private room: Room
   private broadcastChannel?: BroadcastChannel
   private listeners: RoomListener[] = []
@@ -50,9 +64,11 @@ export class LiveKitRoom {
     queue?: string[]
   }
 
-  constructor(roomId: string, isHost: boolean) {
+  constructor(roomId: string, options: LiveKitRoomOptions = {}) {
     this.roomId = roomId
-    this.isHost = isHost
+    this.roomKey = options.roomKey
+    this.hostKey = options.hostKey
+    this.action = options.action ?? (options.roomKey ? 'join' : 'create')
 
     // Fast local tab broadcast fallback
     if (typeof BroadcastChannel !== 'undefined') {
@@ -68,21 +84,60 @@ export class LiveKitRoom {
     })
 
     this.setupEvents()
-    this.init()
+    void this.connect()
+  }
+
+  get isHost(): boolean {
+    return this.isHostRole
+  }
+
+  get status(): ConnectionStatus {
+    return this.connectionStatus
+  }
+
+  private updateStatus(status: ConnectionStatus, errorMsg?: string): void {
+    this.connectionStatus = status
+    for (const listener of this.connectionStatusListeners) {
+      listener(status, errorMsg)
+    }
   }
 
   private setupEvents(): void {
     // 1. Data messages (tape, letter, queue sync via SFU DataChannel)
-    this.room.on(RoomEvent.DataReceived, (payload: Uint8Array) => {
+    this.room.on(RoomEvent.DataReceived, (payload: Uint8Array, participant?: RemoteParticipant) => {
       try {
         const text = new TextDecoder().decode(payload)
         const msg = JSON.parse(text) as RoomMessage
+
+        let senderIsHost = false
+        if (participant?.metadata) {
+          try {
+            const meta = JSON.parse(participant.metadata)
+            senderIsHost = Boolean(meta.isHost)
+          } catch {}
+        }
+
+        // Host enforcement: playback commands can ONLY be executed if sender is verified host
+        if (
+          (msg.type === 'LOAD_TRACK' ||
+            msg.type === 'PLAY' ||
+            msg.type === 'PAUSE' ||
+            msg.type === 'SEEK') &&
+          !senderIsHost
+        ) {
+          console.warn(
+            `[LiveKit] Ignored playback command (${msg.type}) from non-host participant:`,
+            participant?.identity,
+          )
+          return
+        }
+
         this.emit(msg, false)
 
         // ponytail: Any peer with active track or queue responds to newcomer state requests
         if (msg.type === 'REQUEST_STATE' && this.stateProvider) {
           const state = this.stateProvider()
-          if (state.videoId || (state.queue && state.queue.length > 0) || this.isHost) {
+          if (state.videoId || (state.queue && state.queue.length > 0) || this.isHostRole) {
             this.broadcast({
               type: 'SYNC_STATE',
               ...state,
@@ -107,13 +162,6 @@ export class LiveKitRoom {
           el.dataset.participant = participant.identity
           el.setAttribute('playsinline', 'true')
           el.setAttribute('webkit-playsinline', 'true')
-          if (
-            'setSinkId' in el &&
-            typeof (el as unknown as { setSinkId?: (id: string) => Promise<void> }).setSinkId ===
-              'function'
-          ) {
-            void (el as unknown as { setSinkId: (id: string) => Promise<void> }).setSinkId('')
-          }
           document.body.appendChild(el)
           this.audioElements.set(participant.identity, el)
         }
@@ -152,28 +200,76 @@ export class LiveKitRoom {
     this.room.on(RoomEvent.ParticipantConnected, updateCount)
     this.room.on(RoomEvent.ParticipantDisconnected, updateCount)
     this.room.on(RoomEvent.Connected, updateCount)
+    this.room.on(RoomEvent.Disconnected, () => {
+      this.updateStatus('disconnected', 'Disconnected from voice server')
+    })
   }
 
-  private async init(): Promise<void> {
+  async connect(): Promise<void> {
+    this.updateStatus('connecting')
     try {
-      const username = `guest-${Math.random().toString(36).slice(2, 6)}`
-      const res = await fetch(
-        `/api/livekit-token?room=${encodeURIComponent(this.roomId)}&username=${encodeURIComponent(username)}`,
-      )
+      const username = `meadow-${Math.random().toString(36).slice(2, 6)}`
+      const params = new URLSearchParams({
+        room: this.roomId,
+        username,
+        action: this.action,
+      })
+      if (this.roomKey) params.set('key', this.roomKey)
+      if (this.hostKey) params.set('hostKey', this.hostKey)
+
+      const res = await fetch(`/api/livekit-token?${params.toString()}`)
       if (!res.ok) {
-        throw new Error(`Token request returned HTTP ${res.status}`)
+        const errJson = (await res.json().catch(() => ({}))) as { error?: string }
+        const msg = errJson.error || `Voice server returned HTTP ${res.status}`
+        throw new Error(msg)
       }
-      const data = await res.json()
+
+      const data = (await res.json()) as {
+        token: string
+        url: string
+        username: string
+        isHost: boolean
+        roomKey?: string
+        hostKey?: string
+      }
+
+      this.isHostRole = Boolean(data.isHost)
+      if (data.roomKey) this.roomKey = data.roomKey
+      if (data.hostKey) this.hostKey = data.hostKey
+
+      for (const cb of this.credentialListeners) {
+        cb(data.roomKey || '', data.hostKey)
+      }
+
       await this.room.connect(data.url, data.token)
+      this.updateStatus('connected')
 
       // Request current room state if guest
-      if (!this.isHost) {
+      if (!this.isHostRole) {
         setTimeout(() => {
           this.broadcast({ type: 'REQUEST_STATE' })
         }, 500)
       }
     } catch (err) {
-      console.warn('[LiveKit] Connection error, operating in local mode:', err)
+      const message = err instanceof Error ? err.message : 'Connection failed'
+      console.warn('[LiveKit] Connection error:', message)
+      this.updateStatus('error', message)
+    }
+  }
+
+  onConnectionStatusChange(listener: ConnectionStatusListener): () => void {
+    this.connectionStatusListeners.push(listener)
+    listener(this.connectionStatus)
+    return () => {
+      this.connectionStatusListeners = this.connectionStatusListeners.filter((l) => l !== listener)
+    }
+  }
+
+  onCredentials(listener: (roomKey: string, hostKey?: string) => void): () => void {
+    this.credentialListeners.push(listener)
+    if (this.roomKey) listener(this.roomKey, this.hostKey)
+    return () => {
+      this.credentialListeners = this.credentialListeners.filter((l) => l !== listener)
     }
   }
 
@@ -212,6 +308,13 @@ export class LiveKitRoom {
   }
 
   async toggleMicrophone(): Promise<boolean> {
+    if (this.connectionStatus !== 'connected') {
+      await this.connect()
+    }
+    const currentStatus: ConnectionStatus = this.connectionStatus
+    if (currentStatus !== 'connected') {
+      throw new Error('Cannot toggle mic: Voice chat is offline.')
+    }
     const isEnabled = this.room.localParticipant.isMicrophoneEnabled
     await this.room.localParticipant.setMicrophoneEnabled(!isEnabled)
     return !isEnabled

@@ -34,7 +34,6 @@
     "lil-gui": "^0.21.0",
     "livekit-client": "^2.23.0",
     "livekit-server-sdk": "^2.19.2",
-    "peerjs": "^1.5.5",
     "three": "^0.185.1"
   },
   "devDependencies": {
