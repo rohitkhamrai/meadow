@@ -13,7 +13,7 @@ import { LookCamera } from './camera/LookCamera'
 import { CloudDome } from './sky/CloudDome'
 import { windDirectionVec2 } from './grass/utils'
 import { LiveKitRoom, type RoomMessage } from './sync/LiveKitRoom'
-import { YouTubeController } from './audio/YouTubePlayer'
+import { YouTubeController, setAudioSessionMode } from './audio/YouTubePlayer'
 import { CassetteDeck } from './ui/CassetteDeck'
 import { DigitalLetterModal } from './ui/DigitalLetterModal'
 import './style.css'
@@ -554,6 +554,9 @@ document.getElementById('letter-trigger-btn')?.addEventListener('click', () => {
   letterModal.toggle()
 })
 
+// ponytail: Ensure phone speaker loudspeaker mode is set immediately on launch
+setAudioSessionMode('playback')
+
 const micBtn = document.getElementById('hud-mic-btn') as HTMLButtonElement
 const micIcon = micBtn.querySelector('.mic-icon')!
 const micLabel = micBtn.querySelector('.mic-label')!
@@ -562,10 +565,12 @@ micBtn.addEventListener('click', async () => {
   try {
     const isNowOn = await roomSync.toggleMicrophone()
     if (isNowOn) {
+      setAudioSessionMode('play-and-record')
       micBtn.classList.add('active')
       micIcon.textContent = '🎙️'
       micLabel.textContent = 'Mic On'
     } else {
+      setAudioSessionMode('playback')
       micBtn.classList.remove('active', 'speaking')
       micIcon.textContent = '🔇'
       micLabel.textContent = 'Mic Off'
@@ -590,6 +595,10 @@ roomSync.onParticipantCountChange((count) => {
     badgeText.textContent = `Room: #${roomId} (${count} online)`
   }
 })
+
+cassette.onVolumeChange = (vol) => {
+  ytController.setVolume(vol)
+}
 
 cassette.onPlayRequest = () => {
   ytController.play()
@@ -622,16 +631,24 @@ cassette.onQueueChange = (queue) => {
   roomSync.broadcast({ type: 'QUEUE_UPDATE', queue: [...queue] })
 }
 
-cassette.onSkipRequest = () => {
+let lastSkipTimestamp = 0
+const advanceTrack = () => {
+  const now = Date.now()
+  if (now - lastSkipTimestamp < 2500) return
+  lastSkipTimestamp = now
   cassette.skipToNextTrack()
+}
+
+cassette.onSkipRequest = () => {
+  advanceTrack()
 }
 
 ytController.onStateChange((state) => {
   cassette.setPlayingState(state === 'PLAYING')
   cassette.setTrackTitle(ytController.title)
-  // ponytail: Auto-advance to next queued track when song ends
+  // ponytail: Auto-advance to next queued track when song ends with race debouncing
   if (state === 'ENDED') {
-    cassette.skipToNextTrack()
+    advanceTrack()
   }
 })
 
@@ -639,7 +656,7 @@ ytController.onError((code) => {
   if (code === 101 || code === 150 || code === 100) {
     cassette.setTrackTitle('Tape restricted, skipping...')
     setTimeout(() => {
-      cassette.skipToNextTrack()
+      advanceTrack()
     }, 1200)
   }
 })

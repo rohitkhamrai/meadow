@@ -18,9 +18,13 @@ export class CassetteDeck {
   private queueItemsContainer: HTMLElement
   private queueNumEl: HTMLElement
   private clearQueueBtn: HTMLButtonElement
+  private volBtn: HTMLButtonElement
+  private volSlider: HTMLInputElement
 
   private isDraggingSeeker = false
   private isPlaying = false
+  private currentVolume = 100
+  private isMuted = false
   private queue: string[] = []
 
   public onPlayRequest?: () => void
@@ -29,6 +33,7 @@ export class CassetteDeck {
   public onLoadTrackRequest?: (videoId: string) => void
   public onQueueChange?: (queue: string[]) => void
   public onSkipRequest?: () => void
+  public onVolumeChange?: (volume: number) => void
 
   constructor(parent: HTMLElement) {
     this.element = document.createElement('div')
@@ -52,7 +57,10 @@ export class CassetteDeck {
         <div class="cassette-label">
           <div class="cassette-title-row">
             <span class="cassette-track-title">Whimsical Meadow Tape</span>
-            <span class="cassette-side-tag">SIDE A • STEREO</span>
+            <div class="cassette-vol-group" title="Tape Volume">
+              <button class="cassette-vol-btn" title="Toggle Mute">🔊</button>
+              <input type="range" class="cassette-vol-slider" min="0" max="100" value="100" step="1" title="Volume: 100%" />
+            </div>
           </div>
         </div>
 
@@ -121,6 +129,8 @@ export class CassetteDeck {
     this.queueItemsContainer = this.element.querySelector('.cassette-queue-items')!
     this.queueNumEl = this.element.querySelector('.queue-num')!
     this.clearQueueBtn = this.element.querySelector('.queue-clear-btn')!
+    this.volBtn = this.element.querySelector('.cassette-vol-btn')!
+    this.volSlider = this.element.querySelector('.cassette-vol-slider')!
 
     this.setupEvents()
     this.renderQueue()
@@ -128,6 +138,29 @@ export class CassetteDeck {
   }
 
   private setupEvents(): void {
+    this.volSlider.addEventListener('input', () => {
+      const vol = parseFloat(this.volSlider.value)
+      this.currentVolume = vol
+      this.isMuted = vol === 0
+      this.updateVolIcon()
+      this.onVolumeChange?.(vol)
+    })
+
+    this.volBtn.addEventListener('click', () => {
+      this.isMuted = !this.isMuted
+      if (this.isMuted) {
+        this.volSlider.value = '0'
+        this.updateVolIcon()
+        this.onVolumeChange?.(0)
+      } else {
+        const restore = this.currentVolume > 0 ? this.currentVolume : 100
+        this.currentVolume = restore
+        this.volSlider.value = restore.toString()
+        this.updateVolIcon()
+        this.onVolumeChange?.(restore)
+      }
+    })
+
     this.playBtn.addEventListener('click', () => {
       if (this.isPlaying) {
         this.onPauseRequest?.()
@@ -176,6 +209,7 @@ export class CassetteDeck {
       // Any additional tracks are appended to the queue
       if (ids.length > 1) {
         this.enqueue(ids.slice(1))
+        this.queueDrawer.classList.remove('hidden')
       }
     }
 
@@ -188,14 +222,9 @@ export class CassetteDeck {
         return
       }
       this.urlInput.value = ''
-      if (!this.isPlaying) {
-        this.onLoadTrackRequest?.(ids[0])
-        if (ids.length > 1) {
-          this.enqueue(ids.slice(1))
-        }
-      } else {
-        this.enqueue(ids)
-      }
+      // ponytail: Unconditionally push all links to queue and reveal queue drawer
+      this.enqueue(ids)
+      this.queueDrawer.classList.remove('hidden')
     }
 
     const toggleBtn = this.element.querySelector('.cassette-toggle-btn')
@@ -312,6 +341,28 @@ export class CassetteDeck {
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
     return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  setVolume(volume: number): void {
+    this.currentVolume = Math.max(0, Math.min(100, Math.round(volume)))
+    this.volSlider.value = this.currentVolume.toString()
+    this.isMuted = this.currentVolume === 0
+    this.updateVolIcon()
+  }
+
+  getVolume(): number {
+    return this.currentVolume
+  }
+
+  private updateVolIcon(): void {
+    if (this.isMuted || this.volSlider.value === '0') {
+      this.volBtn.textContent = '🔇'
+    } else if (parseFloat(this.volSlider.value) < 50) {
+      this.volBtn.textContent = '🔉'
+    } else {
+      this.volBtn.textContent = '🔊'
+    }
+    this.volSlider.title = `Volume: ${this.volSlider.value}%`
   }
 
   dispose(): void {

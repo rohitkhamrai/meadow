@@ -41,12 +41,23 @@ export interface YTPlayerInstance {
     startSeconds?: number,
   ) => void
   unMute?: () => void
+  mute?: () => void
   setVolume?: (volume: number) => void
   getCurrentTime: () => number
   getDuration: () => number
   getPlayerState: () => number
   getVideoData?: () => { title: string; author: string; video_id: string }
   destroy: () => void
+}
+
+// ponytail: Route iOS/Safari WebKit audio session to loud speaker instead of phone call earpiece
+export function setAudioSessionMode(mode: 'playback' | 'play-and-record'): void {
+  try {
+    const nav = navigator as unknown as { audioSession?: { type: string } }
+    if (nav.audioSession) {
+      nav.audioSession.type = mode
+    }
+  } catch {}
 }
 
 export function extractYouTubeId(urlOrId: string): string | null {
@@ -58,7 +69,7 @@ export function extractYouTubeId(urlOrId: string): string | null {
 export function extractAllYouTubeIds(input: string): string[] {
   const ids: string[] = []
   const urlRegex =
-    /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed\/|v\/|watch\?v=|watch\?.*?&v=))([a-zA-Z0-9_-]{11})/gi
+    /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed\/|v\/|watch\?v=|watch\?.*?&v=|shorts\/))([a-zA-Z0-9_-]{11})/gi
   let match: RegExpExecArray | null
   while ((match = urlRegex.exec(input)) !== null) {
     if (match[1] && !ids.includes(match[1])) {
@@ -86,6 +97,8 @@ export class YouTubeController {
   private timer?: number
   private currentVideoId?: string
   private currentTitle = 'Whimsical Meadow Tape'
+  private volume = 100
+  private isMuted = false
 
   constructor(containerId: string) {
     this.readyPromise = this.initApi(containerId)
@@ -97,6 +110,50 @@ export class YouTubeController {
 
   get title(): string {
     return this.currentTitle
+  }
+
+  setVolume(vol: number): void {
+    this.volume = Math.max(0, Math.min(100, Math.round(vol)))
+    if (this.volume > 0 && this.isMuted) {
+      this.isMuted = false
+      try {
+        this.player?.unMute?.()
+      } catch {}
+    }
+    try {
+      this.player?.setVolume?.(this.volume)
+    } catch {}
+  }
+
+  getVolume(): number {
+    return this.volume
+  }
+
+  toggleMute(): boolean {
+    this.isMuted = !this.isMuted
+    try {
+      if (this.isMuted) {
+        this.player?.mute?.()
+      } else {
+        this.player?.unMute?.()
+        this.player?.setVolume?.(this.volume)
+      }
+    } catch {}
+    return this.isMuted
+  }
+
+  getIsMuted(): boolean {
+    return this.isMuted
+  }
+
+  private enforceAudioRouting(): void {
+    setAudioSessionMode('playback')
+    try {
+      if (!this.isMuted) {
+        this.player?.unMute?.()
+        this.player?.setVolume?.(this.volume)
+      }
+    } catch {}
   }
 
   onStateChange(listener: PlayerStateCallback): () => void {
@@ -118,16 +175,13 @@ export class YouTubeController {
     this.currentVideoId = videoId
     if (!this.player) return
 
-    try {
-      this.player.unMute?.()
-      this.player.setVolume?.(100)
-    } catch {}
+    this.enforceAudioRouting()
 
-    // ponytail: Call native loadVideoById/cueVideoById to switch tracks reliably
+    // ponytail: Pass videoId directly as string, avoiding mobile iframe object-parsing error 100
     if (autoPlay && typeof this.player.loadVideoById === 'function') {
-      this.player.loadVideoById({ videoId, startSeconds })
+      this.player.loadVideoById(videoId, startSeconds)
     } else if (!autoPlay && typeof this.player.cueVideoById === 'function') {
-      this.player.cueVideoById({ videoId, startSeconds })
+      this.player.cueVideoById(videoId, startSeconds)
     } else {
       if (typeof this.player.seekTo === 'function') {
         this.player.seekTo(startSeconds, true)
@@ -136,6 +190,10 @@ export class YouTubeController {
         this.player.playVideo()
       }
     }
+
+    // Staggered audio session and volume retries so mobile handshake applies full loudspeaker volume
+    setTimeout(() => this.enforceAudioRouting(), 300)
+    setTimeout(() => this.enforceAudioRouting(), 1000)
 
     // Update title once metadata is retrieved
     const fetchTitle = () => {
@@ -150,13 +208,11 @@ export class YouTubeController {
 
   async play(): Promise<void> {
     await this.readyPromise
-    try {
-      this.player?.unMute?.()
-      this.player?.setVolume?.(100)
-    } catch {}
+    this.enforceAudioRouting()
     if (typeof this.player?.playVideo === 'function') {
       this.player.playVideo()
     }
+    setTimeout(() => this.enforceAudioRouting(), 300)
   }
 
   async pause(): Promise<void> {
@@ -207,11 +263,8 @@ export class YouTubeController {
             origin: window.location.origin,
           },
           events: {
-            onReady: (event) => {
-              try {
-                event.target.unMute?.()
-                event.target.setVolume?.(100)
-              } catch {}
+            onReady: () => {
+              this.enforceAudioRouting()
               resolve()
             },
             onStateChange: (event) => {
@@ -220,6 +273,7 @@ export class YouTubeController {
               let status: 'PLAYING' | 'PAUSED' | 'ENDED' | 'BUFFERING' = 'PAUSED'
               if (event.data === yt.PlayerState.PLAYING) {
                 status = 'PLAYING'
+                this.enforceAudioRouting()
                 const title = this.player?.getVideoData?.()?.title
                 if (title) this.currentTitle = title
               } else if (event.data === yt.PlayerState.PAUSED) {

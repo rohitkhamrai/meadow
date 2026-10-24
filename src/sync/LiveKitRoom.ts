@@ -79,12 +79,15 @@ export class LiveKitRoom {
         const msg = JSON.parse(text) as RoomMessage
         this.emit(msg, false)
 
-        if (msg.type === 'REQUEST_STATE' && this.isHost && this.stateProvider) {
+        // ponytail: Any peer with active track or queue responds to newcomer state requests
+        if (msg.type === 'REQUEST_STATE' && this.stateProvider) {
           const state = this.stateProvider()
-          this.broadcast({
-            type: 'SYNC_STATE',
-            ...state,
-          })
+          if (state.videoId || (state.queue && state.queue.length > 0) || this.isHost) {
+            this.broadcast({
+              type: 'SYNC_STATE',
+              ...state,
+            })
+          }
         }
       } catch (err) {
         console.warn('[LiveKit] Failed to parse received data:', err)
@@ -102,6 +105,15 @@ export class LiveKitRoom {
         if (track.kind === Track.Kind.Audio) {
           const el = track.attach()
           el.dataset.participant = participant.identity
+          el.setAttribute('playsinline', 'true')
+          el.setAttribute('webkit-playsinline', 'true')
+          if (
+            'setSinkId' in el &&
+            typeof (el as unknown as { setSinkId?: (id: string) => Promise<void> }).setSinkId ===
+              'function'
+          ) {
+            void (el as unknown as { setSinkId: (id: string) => Promise<void> }).setSinkId('')
+          }
           document.body.appendChild(el)
           this.audioElements.set(participant.identity, el)
         }
