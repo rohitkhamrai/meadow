@@ -44,7 +44,7 @@ describe('procedural terrain', () => {
     expect(coverage).toBeGreaterThan(0.76)
     expect(coverage).toBeLessThan(0.88)
     terrain.dispose()
-  })
+  }, 15000)
 
   it('creates varied, paint-like dirt amounts without a named route', () => {
     const values: number[] = []

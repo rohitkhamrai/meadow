@@ -16,6 +16,8 @@ import { LiveKitRoom, type RoomMessage } from './sync/LiveKitRoom'
 import { YouTubeController, setAudioSessionMode } from './audio/YouTubePlayer'
 import { CassetteDeck } from './ui/CassetteDeck'
 import { DigitalLetterModal } from './ui/DigitalLetterModal'
+import { GameWindow } from './ui/GameWindow'
+import { SnakesGame } from './games/SnakesGame'
 import './style.css'
 import './ui/whimsical.css'
 
@@ -532,6 +534,9 @@ hud.innerHTML = `
     <button class="letter-trigger-btn" id="letter-trigger-btn">
       💌 Open Letter
     </button>
+    <button class="game-trigger-btn" id="game-trigger-btn" title="Open Meadow Parlor Games">
+      🎲 Parlor Games
+    </button>
   </div>
 `
 document.body.appendChild(hud)
@@ -543,6 +548,8 @@ document.body.appendChild(ytHost)
 const ytController = new YouTubeController('yt-player-host')
 const cassette = new CassetteDeck(document.body)
 const letterModal = new DigitalLetterModal(document.body)
+const gameWindow = new GameWindow(document.body)
+const snakesHostGame = new SnakesGame()
 
 roomSync.onCredentials((key, hostKey) => {
   roomKey = key
@@ -577,6 +584,9 @@ function updateBadgeDisplay(status: string, errMessage?: string) {
 
 roomSync.onConnectionStatusChange((status, err) => {
   updateBadgeDisplay(status, err)
+  if (status === 'connected') {
+    registerLocalPlayerInGame()
+  }
 })
 
 roomSync.onParticipantCountChange((count) => {
@@ -611,6 +621,59 @@ document.getElementById('meadow-room-badge')?.addEventListener('click', () => {
 document.getElementById('letter-trigger-btn')?.addEventListener('click', () => {
   letterModal.toggle()
 })
+
+const gameTriggerBtn = document.getElementById('game-trigger-btn') as HTMLButtonElement | null
+if (gameTriggerBtn) {
+  gameWindow.setTriggerButton(gameTriggerBtn)
+  gameTriggerBtn.addEventListener('click', () => {
+    gameWindow.toggle()
+    registerLocalPlayerInGame()
+  })
+}
+
+const broadcastGameState = () => {
+  const state = snakesHostGame.getState()
+  gameWindow.setGameState(state)
+  roomSync.broadcast({ type: 'GAME_STATE_UPDATE', state })
+}
+
+const registerLocalPlayerInGame = () => {
+  const localId = roomSync.localParticipantId
+  gameWindow.setLocalIdentity(localId, roomSync.isHost)
+  if (roomSync.isHost) {
+    snakesHostGame.addOrUpdatePlayer(localId, 'Host')
+    broadcastGameState()
+  } else {
+    roomSync.broadcast({
+      type: 'GAME_ACTION',
+      action: { type: 'JOIN', playerId: localId, name: 'Guest' },
+    })
+  }
+}
+
+gameWindow.onRollRequest = (playerId) => {
+  if (roomSync.isHost) {
+    snakesHostGame.roll(playerId)
+    broadcastGameState()
+  } else {
+    roomSync.broadcast({
+      type: 'GAME_ACTION',
+      action: { type: 'ROLL', playerId },
+    })
+  }
+}
+
+gameWindow.onResetRequest = () => {
+  if (roomSync.isHost) {
+    snakesHostGame.resetGame()
+    broadcastGameState()
+  } else {
+    roomSync.broadcast({
+      type: 'GAME_ACTION',
+      action: { type: 'RESET' },
+    })
+  }
+}
 
 // ponytail: Ensure phone speaker loudspeaker mode is set immediately on launch
 setAudioSessionMode('playback')
@@ -739,6 +802,7 @@ roomSync.setStateProvider(() => ({
   isPlaying: ytController.isPlaying(),
   letterText: letterModal.text,
   queue: [...cassette.getQueue()],
+  gameState: snakesHostGame.getState(),
 }))
 
 roomSync.onMessage((msg: RoomMessage) => {
@@ -764,6 +828,23 @@ roomSync.onMessage((msg: RoomMessage) => {
     case 'QUEUE_UPDATE':
       cassette.setQueue(msg.queue)
       break
+    case 'GAME_ACTION':
+      if (roomSync.isHost) {
+        if (msg.action.type === 'JOIN') {
+          snakesHostGame.addOrUpdatePlayer(msg.action.playerId, msg.action.name)
+          broadcastGameState()
+        } else if (msg.action.type === 'ROLL') {
+          snakesHostGame.roll(msg.action.playerId)
+          broadcastGameState()
+        } else if (msg.action.type === 'RESET') {
+          snakesHostGame.resetGame()
+          broadcastGameState()
+        }
+      }
+      break
+    case 'GAME_STATE_UPDATE':
+      gameWindow.setGameState(msg.state)
+      break
     case 'SYNC_STATE':
       if (msg.videoId && msg.videoId !== ytController.videoId) {
         ytController.loadTrack(msg.videoId, msg.time, msg.isPlaying)
@@ -773,6 +854,9 @@ roomSync.onMessage((msg: RoomMessage) => {
         cassette.setQueue(msg.queue)
       }
       letterModal.setText(msg.letterText)
+      if (msg.gameState) {
+        gameWindow.setGameState(msg.gameState)
+      }
       break
   }
 })
@@ -805,5 +889,6 @@ window.addEventListener('beforeunload', () => {
   ytController.dispose()
   cassette.dispose()
   letterModal.dispose()
+  gameWindow.dispose()
   renderer.dispose()
 })

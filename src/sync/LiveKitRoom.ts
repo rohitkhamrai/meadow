@@ -8,6 +8,8 @@ import {
   type Participant,
 } from 'livekit-client'
 
+import type { SnakesGameState } from '../games/SnakesGame'
+
 export type RoomMessage =
   | { type: 'LOAD_TRACK'; videoId: string; title: string; time: number; isPlaying: boolean }
   | { type: 'PLAY'; time: number }
@@ -24,6 +26,18 @@ export type RoomMessage =
       isPlaying: boolean
       letterText: string
       queue?: string[]
+      gameState?: SnakesGameState
+    }
+  | {
+      type: 'GAME_ACTION'
+      action:
+        | { type: 'ROLL'; playerId: string }
+        | { type: 'JOIN'; playerId: string; name: string }
+        | { type: 'RESET' }
+    }
+  | {
+      type: 'GAME_STATE_UPDATE'
+      state: SnakesGameState
     }
 
 export type RoomListener = (message: RoomMessage, isSelf: boolean) => void
@@ -62,6 +76,7 @@ export class LiveKitRoom {
     isPlaying: boolean
     letterText: string
     queue?: string[]
+    gameState?: SnakesGameState
   }
 
   constructor(roomId: string, options: LiveKitRoomOptions = {}) {
@@ -89,6 +104,10 @@ export class LiveKitRoom {
 
   get isHost(): boolean {
     return this.isHostRole
+  }
+
+  get localParticipantId(): string {
+    return this.room.localParticipant?.identity || 'host-player'
   }
 
   get status(): ConnectionStatus {
@@ -281,6 +300,7 @@ export class LiveKitRoom {
       isPlaying: boolean
       letterText: string
       queue?: string[]
+      gameState?: SnakesGameState
     },
   ): void {
     this.stateProvider = provider
