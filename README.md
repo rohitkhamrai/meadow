@@ -10,10 +10,14 @@
 
 - 📼 **Retro Cassette Deck**: Authentic tactile tape player with rotating spools, audio seeker, side-label volume control, and mute toggle.
 - 🎶 **Multi-Link YouTube Queue**: Paste single or batch YouTube links/shorts (`https://...`), queue upcoming tracks, skip on demand, and auto-advance when tracks end.
-- 🎙️ **Real-Time Voice Chat**: Multi-user WebRTC voice chat powered by LiveKit SFU with mic toggle, active speaker indicators, and participant counter.
+- 🎙️ **Real-Time Voice Chat**: Multi-user WebRTC voice chat powered by LiveKit SFU with mic toggle, active speaker indicators, participant counter, and server-side room token security.
+- 🎲 **Synchronized Parlor Games**: Play multiplayer parlor games directly inside the room within a non-blocking 35% floating panel, keeping the meadow, cassette music, and voice chat running uninterrupted:
+  - 🐍 **Snakes and Ladders**: Authentic 100-cell checkered grid with illustrated coiled snakes, teal ladders, kinetic step-by-step hopping animations, and classic audio cues.
+  - 🎲 **Ludo Classic**: Authentic 15×15 board with 4 colored home base quadrants, 4 spherical 3D goti pawns per player, central 🏆 Win House, safe star cells, 3D rolling perspective dice cube, and live emoji reaction toasts (`❤️`, `😂`, `🥺`, `💩`, `🤬`, `😭`, `😱`, `🤯`, `😎`, `🔥`).
 - 💌 **Synchronized Digital Letter**: Shared interactive letter overlay that updates live across all connected peers.
 - 🌾 **Stylized 3D World**: Procedural terrain, wind-reactive instanced grass blades, drifting cloud dome, and blooming wildflowers with low-angle 360° lying-down camera controls.
 - 📱 **Mobile Loudspeaker Routing**: Native audio session management (`navigator.audioSession`) ensuring audio plays through full-volume stereo phone speakers instead of quiet call earpieces.
+- 🔒 **Host Control & Security**: Server-side room secrets and host privilege checks ensuring only authorized participants can control playback or manage queues.
 - 🔗 **Instant Room Sharing**: Unique room links (`#room=iris-XXXXXX`) for 1-click invite sharing with zero account signup required.
 
 ---
@@ -71,11 +75,11 @@ Every `git push` to `main` automatically triggers a zero-downtime production dep
 
 ## 🛠️ Tech Stack
 
-- **Graphics**: [Three.js](https://threejs.org/) (GLSL Shaders, InstancedMesh, Procedural Terrain, Sky Dome)
-- **Audio & Media**: YouTube IFrame API with custom hardware audio session management
-- **Real-Time Sync & Voice**: [LiveKit](https://livekit.io/) (WebRTC SFU Audio Tracks & Low-Latency DataChannels)
-- **Build Tool**: [Vite](https://vitejs.dev/) & TypeScript
-- **Tooling**: [Oxlint](https://oxc.rs/) & [Oxfmt](https://oxc.rs/) for ultra-fast linting and formatting
+- **3D World & Shaders**: WebGL & Three.js (Procedural wind-reactive grass blades, blooming wildflowers, dynamic sky dome)
+- **Audio & Media**: YouTube IFrame API with custom hardware audio session management & Web Audio SFX
+- **Real-Time Voice & Multiplayer Sync**: [LiveKit](https://livekit.io/) (WebRTC SFU Audio Tracks & Low-Latency DataChannels for synchronized games and letter)
+- **UI Architecture**: Vanilla TypeScript & Modular CSS (Tactile retro cassette deck, 3D tumbling dice cube, responsive 35% floating parlor window)
+- **Build & Quality**: [Vite](https://vitejs.dev/), TypeScript, [Vitest](https://vitest.dev/), [Oxlint](https://oxc.rs/), and [Oxfmt](https://oxc.rs/)
 
 ---
 

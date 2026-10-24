@@ -1,0 +1,5 @@
+Meet Meadow: a cozy shared 3D listening room where friends listen to synced music, talk over spatial voice, and play parlor games together in real time.
+
+No accounts, no downloads — just paste a YouTube link, open the cassette player, challenge your friends to 15x15 Ludo Classic or Snakes & Ladders, and watch the flowers sway.
+
+Open directly in your browser: https://meadow.app/

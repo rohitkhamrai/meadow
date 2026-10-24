@@ -1,8 +1,8 @@
 {
-  "name": "three-stylized",
-  "version": "0.0.0",
+  "name": "meadow",
+  "version": "1.0.0",
   "private": true,
-  "description": "A deterministic Three.js meadow renderer with procedural terrain, instanced grass, animated wind, stylized lighting, wildflowers, and runtime configuration updates.",
+  "description": "A cozy, shared 3D listening meadow for friends to listen to music, talk, and play parlor games together in real time.",
   "keywords": [
     "grass",
     "instanced-mesh",
