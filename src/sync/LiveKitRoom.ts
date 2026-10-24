@@ -9,6 +9,7 @@ import {
 } from 'livekit-client'
 
 import type { SnakesGameState } from '../games/SnakesGame'
+import type { LudoGameState } from '../games/LudoGame'
 
 export type RoomMessage =
   | { type: 'LOAD_TRACK'; videoId: string; title: string; time: number; isPlaying: boolean }
@@ -27,6 +28,7 @@ export type RoomMessage =
       letterText: string
       queue?: string[]
       gameState?: SnakesGameState
+      ludoState?: LudoGameState
     }
   | {
       type: 'GAME_ACTION'
@@ -38,6 +40,18 @@ export type RoomMessage =
   | {
       type: 'GAME_STATE_UPDATE'
       state: SnakesGameState
+    }
+  | {
+      type: 'LUDO_ACTION'
+      action:
+        | { type: 'ROLL'; playerId: string }
+        | { type: 'MOVE_TOKEN'; playerId: string; tokenId: number }
+        | { type: 'JOIN'; playerId: string; name: string }
+        | { type: 'RESET' }
+    }
+  | {
+      type: 'LUDO_STATE_UPDATE'
+      state: LudoGameState
     }
 
 export type RoomListener = (message: RoomMessage, isSelf: boolean) => void
@@ -77,6 +91,7 @@ export class LiveKitRoom {
     letterText: string
     queue?: string[]
     gameState?: SnakesGameState
+    ludoState?: LudoGameState
   }
 
   constructor(roomId: string, options: LiveKitRoomOptions = {}) {
@@ -301,6 +316,7 @@ export class LiveKitRoom {
       letterText: string
       queue?: string[]
       gameState?: SnakesGameState
+      ludoState?: LudoGameState
     },
   ): void {
     this.stateProvider = provider

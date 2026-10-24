@@ -18,6 +18,7 @@ import { CassetteDeck } from './ui/CassetteDeck'
 import { DigitalLetterModal } from './ui/DigitalLetterModal'
 import { GameWindow } from './ui/GameWindow'
 import { SnakesGame } from './games/SnakesGame'
+import { LudoGame } from './games/LudoGame'
 import './style.css'
 import './ui/whimsical.css'
 
@@ -550,6 +551,7 @@ const cassette = new CassetteDeck(document.body)
 const letterModal = new DigitalLetterModal(document.body)
 const gameWindow = new GameWindow(document.body)
 const snakesHostGame = new SnakesGame()
+const ludoHostGame = new LudoGame()
 
 roomSync.onCredentials((key, hostKey) => {
   roomKey = key
@@ -637,15 +639,27 @@ const broadcastGameState = () => {
   roomSync.broadcast({ type: 'GAME_STATE_UPDATE', state })
 }
 
+const broadcastLudoState = () => {
+  const state = ludoHostGame.getState()
+  gameWindow.setLudoState(state)
+  roomSync.broadcast({ type: 'LUDO_STATE_UPDATE', state })
+}
+
 const registerLocalPlayerInGame = () => {
   const localId = roomSync.localParticipantId
   gameWindow.setLocalIdentity(localId, roomSync.isHost)
   if (roomSync.isHost) {
     snakesHostGame.addOrUpdatePlayer(localId, 'Host')
+    ludoHostGame.addOrUpdatePlayer(localId, 'Host')
     broadcastGameState()
+    broadcastLudoState()
   } else {
     roomSync.broadcast({
       type: 'GAME_ACTION',
+      action: { type: 'JOIN', playerId: localId, name: 'Guest' },
+    })
+    roomSync.broadcast({
+      type: 'LUDO_ACTION',
       action: { type: 'JOIN', playerId: localId, name: 'Guest' },
     })
   }
@@ -670,6 +684,42 @@ gameWindow.onResetRequest = () => {
   } else {
     roomSync.broadcast({
       type: 'GAME_ACTION',
+      action: { type: 'RESET' },
+    })
+  }
+}
+
+gameWindow.onLudoRollRequest = (playerId) => {
+  if (roomSync.isHost) {
+    ludoHostGame.roll(playerId)
+    broadcastLudoState()
+  } else {
+    roomSync.broadcast({
+      type: 'LUDO_ACTION',
+      action: { type: 'ROLL', playerId },
+    })
+  }
+}
+
+gameWindow.onLudoMoveTokenRequest = (playerId, tokenId) => {
+  if (roomSync.isHost) {
+    ludoHostGame.moveToken(playerId, tokenId)
+    broadcastLudoState()
+  } else {
+    roomSync.broadcast({
+      type: 'LUDO_ACTION',
+      action: { type: 'MOVE_TOKEN', playerId, tokenId },
+    })
+  }
+}
+
+gameWindow.onLudoResetRequest = () => {
+  if (roomSync.isHost) {
+    ludoHostGame.resetGame()
+    broadcastLudoState()
+  } else {
+    roomSync.broadcast({
+      type: 'LUDO_ACTION',
       action: { type: 'RESET' },
     })
   }
@@ -803,6 +853,7 @@ roomSync.setStateProvider(() => ({
   letterText: letterModal.text,
   queue: [...cassette.getQueue()],
   gameState: snakesHostGame.getState(),
+  ludoState: ludoHostGame.getState(),
 }))
 
 roomSync.onMessage((msg: RoomMessage) => {
@@ -845,6 +896,26 @@ roomSync.onMessage((msg: RoomMessage) => {
     case 'GAME_STATE_UPDATE':
       gameWindow.setGameState(msg.state)
       break
+    case 'LUDO_ACTION':
+      if (roomSync.isHost) {
+        if (msg.action.type === 'JOIN') {
+          ludoHostGame.addOrUpdatePlayer(msg.action.playerId, msg.action.name)
+          broadcastLudoState()
+        } else if (msg.action.type === 'ROLL') {
+          ludoHostGame.roll(msg.action.playerId)
+          broadcastLudoState()
+        } else if (msg.action.type === 'MOVE_TOKEN') {
+          ludoHostGame.moveToken(msg.action.playerId, msg.action.tokenId)
+          broadcastLudoState()
+        } else if (msg.action.type === 'RESET') {
+          ludoHostGame.resetGame()
+          broadcastLudoState()
+        }
+      }
+      break
+    case 'LUDO_STATE_UPDATE':
+      gameWindow.setLudoState(msg.state)
+      break
     case 'SYNC_STATE':
       if (msg.videoId && msg.videoId !== ytController.videoId) {
         ytController.loadTrack(msg.videoId, msg.time, msg.isPlaying)
@@ -856,6 +927,9 @@ roomSync.onMessage((msg: RoomMessage) => {
       letterModal.setText(msg.letterText)
       if (msg.gameState) {
         gameWindow.setGameState(msg.gameState)
+      }
+      if (msg.ludoState) {
+        gameWindow.setLudoState(msg.ludoState)
       }
       break
   }

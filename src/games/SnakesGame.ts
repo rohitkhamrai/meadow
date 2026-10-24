@@ -103,22 +103,26 @@ export class GameSoundSynthesizer {
   playDiceRoll(): void {
     const ctx = this.getContext()
     if (!ctx) return
-    const now = ctx.currentTime
 
-    // 3 subtle wooden clicks
-    for (let i = 0; i < 3; i++) {
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-      osc.type = 'triangle'
-      osc.frequency.setValueAtTime(120 + i * 30, now + i * 0.05)
+    try {
+      // Noise buffer for realistic tactile dice tumble (reverse-engineered from ludo-classic)
+      const bufferLength = Math.floor(ctx.sampleRate * 0.32)
+      const buf = ctx.createBuffer(1, bufferLength, ctx.sampleRate)
+      const d = buf.getChannelData(0)
+      for (let i = 0; i < d.length; i++) {
+        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 0.5) * 0.4
+      }
 
-      gain.gain.setValueAtTime(0.08, now + i * 0.05)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.04)
-
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-      osc.start(now + i * 0.05)
-      osc.stop(now + i * 0.05 + 0.05)
+      const s = ctx.createBufferSource()
+      const g = ctx.createGain()
+      s.buffer = buf
+      s.connect(g)
+      g.connect(ctx.destination)
+      g.gain.setValueAtTime(0.2, ctx.currentTime)
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.32)
+      s.start()
+    } catch {
+      // Fallback
     }
   }
 
@@ -129,20 +133,59 @@ export class GameSoundSynthesizer {
 
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
-    osc.type = 'sine'
+    osc.type = 'triangle'
 
-    // Subtle pentatonic scale based on position
-    const pentatonic = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25]
+    const pentatonic = [329.63, 392.0, 440.0, 523.25, 659.25]
     const freq = pentatonic[position % pentatonic.length]
     osc.frequency.setValueAtTime(freq, now)
 
-    gain.gain.setValueAtTime(0.09, now)
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12)
+    gain.gain.setValueAtTime(0.12, now)
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1)
 
     osc.connect(gain)
     gain.connect(ctx.destination)
     osc.start(now)
-    osc.stop(now + 0.13)
+    osc.stop(now + 0.11)
+  }
+
+  playSafeStar(): void {
+    const ctx = this.getContext()
+    if (!ctx) return
+    const now = ctx.currentTime
+    const notes = [523, 659, 784, 1047]
+
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(freq, now + idx * 0.07)
+      gain.gain.setValueAtTime(0.1, now + idx * 0.07)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.14)
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start(now + idx * 0.07)
+      osc.stop(now + idx * 0.07 + 0.15)
+    })
+  }
+
+  playCapture(): void {
+    const ctx = this.getContext()
+    if (!ctx) return
+    const now = ctx.currentTime
+    const notes = [260, 195, 130]
+
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = 'sawtooth'
+      osc.frequency.setValueAtTime(freq, now + idx * 0.06)
+      gain.gain.setValueAtTime(0.09, now + idx * 0.06)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.16)
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start(now + idx * 0.06)
+      osc.stop(now + idx * 0.06 + 0.17)
+    })
   }
 
   playLadderClimb(): void {

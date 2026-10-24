@@ -1313,3 +1313,149 @@
     padding: 12px;
   }
 }
+
+/* --- Parlor Game Tabs & Ludo Board Styles --- */
+
+.game-tabs {
+  display: flex;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 3px;
+  border-radius: 10px;
+  border: 1px solid rgba(245, 215, 160, 0.2);
+}
+
+.game-tab-btn {
+  background: none;
+  border: none;
+  border-radius: 7px;
+  color: #ebdcc0;
+  font-family: 'Newsreader', serif;
+  font-size: 13px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.game-tab-btn:hover {
+  color: #fff;
+}
+
+.game-tab-btn.active {
+  background: rgba(245, 158, 11, 0.25);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  color: #fff;
+  font-weight: 600;
+}
+
+.game-board-grid.ludo-grid {
+  grid-template-columns: repeat(15, 1fr);
+  grid-template-rows: repeat(15, 1fr);
+  background: #15110d;
+}
+
+.ludo-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0.5px solid rgba(255, 255, 255, 0.05);
+  font-size: 9px;
+  user-select: none;
+}
+
+.ludo-yard {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.yard-rose {
+  background: rgba(244, 63, 94, 0.2);
+}
+.yard-sage {
+  background: rgba(16, 185, 129, 0.2);
+}
+.yard-buttercup {
+  background: rgba(245, 158, 11, 0.2);
+}
+.yard-iris {
+  background: rgba(139, 92, 246, 0.2);
+}
+
+.yard-nest {
+  background: rgba(0, 0, 0, 0.45) !important;
+  border: 1.5px dashed rgba(255, 255, 255, 0.35) !important;
+  border-radius: 50%;
+}
+
+.ludo-home-triangle {
+  background: radial-gradient(circle, #f59e0b 0%, #78350f 100%);
+  color: #fef08a;
+  font-size: 11px;
+}
+
+.runway-rose {
+  background: rgba(244, 63, 94, 0.55);
+}
+.runway-sage {
+  background: rgba(16, 185, 129, 0.55);
+}
+.runway-buttercup {
+  background: rgba(245, 158, 11, 0.55);
+}
+.runway-iris {
+  background: rgba(139, 92, 246, 0.55);
+}
+
+.ludo-track-cell {
+  background: rgba(255, 248, 235, 0.06);
+}
+
+.ludo-safe-star {
+  color: #f59e0b;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.ludo-pawn {
+  width: 17px;
+  height: 17px;
+  font-size: 9.5px;
+  border-radius: 50%;
+  border: 1.5px solid #ffffff !important;
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.5),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.8),
+    inset 0 -1.5px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+.ludo-pawn.pawn-rose {
+  background: radial-gradient(circle at 35% 35%, #ff8a80 0%, #b71c1c 100%) !important;
+}
+.ludo-pawn.pawn-sage {
+  background: radial-gradient(circle at 35% 35%, #69f0ae 0%, #1b5e20 100%) !important;
+}
+.ludo-pawn.pawn-buttercup {
+  background: radial-gradient(circle at 35% 35%, #ffe57f 0%, #e65100 100%) !important;
+}
+.ludo-pawn.pawn-iris {
+  background: radial-gradient(circle at 35% 35%, #82b1ff 0%, #0d47a1 100%) !important;
+}
+
+.eligible-token {
+  cursor: pointer;
+  animation: token-eligible-bounce 0.9s infinite alternate;
+  box-shadow:
+    0 0 14px #f59e0b,
+    0 0 24px rgba(245, 158, 11, 0.8) !important;
+  border: 2px solid #fff !important;
+  z-index: 10;
+}
+
+@keyframes token-eligible-bounce {
+  0% {
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.35);
+  }
+}

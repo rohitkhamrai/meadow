@@ -6,9 +6,19 @@ import {
   GameSoundSynthesizer,
 } from '../games/SnakesGame'
 
+import {
+  LudoGame,
+  type LudoGameState,
+  getTokenCoord,
+  LUDO_TRACK,
+  SAFE_STAR_TILES,
+} from '../games/LudoGame'
+
 export class GameWindow {
   private overlay: HTMLDivElement
   private card: HTMLDivElement
+  private tabSnakesBtn: HTMLButtonElement
+  private tabLudoBtn: HTMLButtonElement
   private boardGrid: HTMLDivElement
   private svgLayer: SVGSVGElement
   private pawnsContainer: HTMLDivElement
@@ -20,7 +30,9 @@ export class GameWindow {
   private closeBtn: HTMLButtonElement
   private minTriggerBtn?: HTMLButtonElement
 
-  private game: SnakesGame
+  private activeTab: 'snakes' | 'ludo' = 'snakes'
+  private snakesGame: SnakesGame
+  private ludoGame: LudoGame
   private sound: GameSoundSynthesizer
   private isOpen = false
   private localPlayerId = ''
@@ -28,10 +40,13 @@ export class GameWindow {
 
   public onRollRequest?: (playerId: string) => void
   public onResetRequest?: () => void
-  public onJoinRequest?: (playerId: string, name: string) => void
+  public onLudoRollRequest?: (playerId: string) => void
+  public onLudoMoveTokenRequest?: (playerId: string, tokenId: number) => void
+  public onLudoResetRequest?: () => void
 
   constructor(parent: HTMLElement) {
-    this.game = new SnakesGame()
+    this.snakesGame = new SnakesGame()
+    this.ludoGame = new LudoGame()
     this.sound = new GameSoundSynthesizer()
 
     this.overlay = document.createElement('div')
@@ -42,9 +57,9 @@ export class GameWindow {
 
     this.card.innerHTML = `
       <div class="game-header">
-        <div class="game-title-group">
-          <h3 class="game-title">🐍 Meadow Ladders</h3>
-          <span class="game-subtitle">Synced Live Parlor</span>
+        <div class="game-tabs">
+          <button class="game-tab-btn active" id="tab-snakes">🐍 Ladders</button>
+          <button class="game-tab-btn" id="tab-ludo">🎲 Ludo</button>
         </div>
         <div class="game-header-actions">
           <button class="game-action-btn" id="game-reset-btn" title="Reset Game">🔄 New Game</button>
@@ -83,6 +98,8 @@ export class GameWindow {
     this.overlay.appendChild(this.card)
     parent.appendChild(this.overlay)
 
+    this.tabSnakesBtn = this.card.querySelector('#tab-snakes')!
+    this.tabLudoBtn = this.card.querySelector('#tab-ludo')!
     this.boardGrid = this.card.querySelector('#game-board-grid')!
     this.svgLayer = this.card.querySelector('#game-board-svg')!
     this.pawnsContainer = this.card.querySelector('#game-pawns-container')!
@@ -93,8 +110,7 @@ export class GameWindow {
     this.resetBtn = this.card.querySelector('#game-reset-btn')!
     this.closeBtn = this.card.querySelector('#game-close-btn')!
 
-    this.renderBoardGrid()
-    this.renderBoardVectors()
+    this.renderBoard()
     this.bindEvents()
   }
 
@@ -113,24 +129,48 @@ export class GameWindow {
     return this.isHost
   }
 
+  get currentTab(): 'snakes' | 'ludo' {
+    return this.activeTab
+  }
+
+  // --- Snakes State API ---
   getGameState(): SnakesGameState {
-    return this.game.getState()
+    return this.snakesGame.getState()
   }
 
   setGameState(state: SnakesGameState): void {
-    const prevState = this.game.getState()
-    this.game.setState(state)
+    const prevState = this.snakesGame.getState()
+    this.snakesGame.setState(state)
 
-    // Play audio cues on differences
-    if (state.lastRoll && state.lastRoll !== prevState.lastRoll) {
-      this.animateDiceRoll(state.lastRoll)
+    if (this.activeTab === 'snakes') {
+      if (state.lastRoll && state.lastRoll !== prevState.lastRoll) {
+        this.animateDiceRoll(state.lastRoll)
+      }
+      if (state.winnerId && !prevState.winnerId) {
+        this.sound.playVictory()
+      }
+      this.updateUI()
     }
+  }
 
-    if (state.winnerId && !prevState.winnerId) {
-      this.sound.playVictory()
+  // --- Ludo State API ---
+  getLudoState(): LudoGameState {
+    return this.ludoGame.getState()
+  }
+
+  setLudoState(state: LudoGameState): void {
+    const prevState = this.ludoGame.getState()
+    this.ludoGame.setState(state)
+
+    if (this.activeTab === 'ludo') {
+      if (state.lastRoll && state.lastRoll !== prevState.lastRoll) {
+        this.animateDiceRoll(state.lastRoll)
+      }
+      if (state.winnerId && !prevState.winnerId) {
+        this.sound.playVictory()
+      }
+      this.updateUI()
     }
-
-    this.updateUI()
   }
 
   open(): void {
@@ -152,41 +192,87 @@ export class GameWindow {
   }
 
   private bindEvents(): void {
+    this.tabSnakesBtn.addEventListener('click', () => {
+      this.activeTab = 'snakes'
+      this.tabSnakesBtn.classList.add('active')
+      this.tabLudoBtn.classList.remove('active')
+      this.renderBoard()
+      this.updateUI()
+    })
+
+    this.tabLudoBtn.addEventListener('click', () => {
+      this.activeTab = 'ludo'
+      this.tabLudoBtn.classList.add('active')
+      this.tabSnakesBtn.classList.remove('active')
+      this.renderBoard()
+      this.updateUI()
+    })
+
     this.closeBtn.addEventListener('click', () => this.close())
+
     this.resetBtn.addEventListener('click', () => {
-      if (this.onResetRequest) {
-        this.onResetRequest()
+      if (this.activeTab === 'snakes') {
+        if (this.onResetRequest) this.onResetRequest()
+        else {
+          this.snakesGame.resetGame()
+          this.updateUI()
+        }
       } else {
-        this.game.resetGame()
-        this.updateUI()
+        if (this.onLudoResetRequest) this.onLudoResetRequest()
+        else {
+          this.ludoGame.resetGame()
+          this.updateUI()
+        }
       }
     })
 
     this.rollBtn.addEventListener('click', () => {
-      const state = this.game.getState()
-      if (state.players.length === 0) return
-      const activePlayer = state.players[state.activePlayerIndex]
-      if (activePlayer && activePlayer.id !== this.localPlayerId) return
+      if (this.activeTab === 'snakes') {
+        const state = this.snakesGame.getState()
+        if (state.players.length === 0) return
+        const activePlayer = state.players[state.activePlayerIndex]
+        if (activePlayer && activePlayer.id !== this.localPlayerId) return
 
-      if (this.onRollRequest) {
-        this.onRollRequest(this.localPlayerId)
+        if (this.onRollRequest) {
+          this.onRollRequest(this.localPlayerId)
+        } else {
+          const res = this.snakesGame.roll(this.localPlayerId)
+          this.sound.playDiceRoll()
+          if (res.climbedLadder) setTimeout(() => this.sound.playLadderClimb(), 400)
+          else if (res.slidSnake) setTimeout(() => this.sound.playSnakeSlide(), 400)
+          else if (res.hasWon) setTimeout(() => this.sound.playVictory(), 400)
+          else setTimeout(() => this.sound.playPawnStep(activePlayer.position), 300)
+          this.setGameState(res.state)
+        }
       } else {
-        // Local standalone mode
-        const res = this.game.roll(this.localPlayerId)
-        this.sound.playDiceRoll()
-        if (res.climbedLadder) setTimeout(() => this.sound.playLadderClimb(), 400)
-        else if (res.slidSnake) setTimeout(() => this.sound.playSnakeSlide(), 400)
-        else if (res.hasWon) setTimeout(() => this.sound.playVictory(), 400)
-        else setTimeout(() => this.sound.playPawnStep(activePlayer.position), 300)
-        this.setGameState(res.state)
+        // Ludo roll
+        const state = this.ludoGame.getState()
+        if (state.players.length === 0) return
+        const activePlayer = state.players[state.activePlayerIndex]
+        if (activePlayer && activePlayer.id !== this.localPlayerId) return
+
+        if (this.onLudoRollRequest) {
+          this.onLudoRollRequest(this.localPlayerId)
+        } else {
+          const res = this.ludoGame.roll(this.localPlayerId)
+          this.sound.playDiceRoll()
+          this.setLudoState(res.state)
+        }
       }
     })
   }
 
-  private renderBoardGrid(): void {
+  private renderBoard(): void {
+    if (this.activeTab === 'snakes') {
+      this.renderSnakesBoard()
+    } else {
+      this.renderLudoBoard()
+    }
+  }
+
+  private renderSnakesBoard(): void {
+    this.boardGrid.className = 'game-board-grid snakes-grid'
     this.boardGrid.innerHTML = ''
-    // 10 rows × 10 cols
-    // Grid row 0 is top (tiles 100-91), row 9 is bottom (tiles 1-10)
     for (let r = 9; r >= 0; r--) {
       for (let c = 0; c < 10; c++) {
         const col = r % 2 === 0 ? c : 9 - c
@@ -209,10 +295,10 @@ export class GameWindow {
         this.boardGrid.appendChild(cell)
       }
     }
+    this.renderSnakesVectors()
   }
 
-  private renderBoardVectors(): void {
-    // Generate SVG curves for snakes and lines with rungs for ladders
+  private renderSnakesVectors(): void {
     let svgContent = `
       <defs>
         <linearGradient id="ladder-grad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -235,13 +321,11 @@ export class GameWindow {
       const p2 = getTileCoordinates(dest)
 
       if (dest > start) {
-        // Ladder: two parallel side rails and 3-5 rungs
         const dx = p2.xPercent - p1.xPercent
         const dy = p2.yPercent - p1.yPercent
         const len = Math.sqrt(dx * dx + dy * dy)
         if (len === 0) continue
 
-        // Perpendicular offset for rails
         const offX = (-dy / len) * 1.4
         const offY = (dx / len) * 1.4
 
@@ -259,7 +343,6 @@ export class GameWindow {
 
         svgContent += leftRail + rightRail + rungs
       } else {
-        // Snake: sinusoidal bezier curve from head (start) to tail (dest)
         const midX = (p1.xPercent + p2.xPercent) / 2 + (p1.yPercent > p2.yPercent ? 6 : -6)
         const midY = (p1.yPercent + p2.yPercent) / 2
         const path = `M ${p1.xPercent} ${p1.yPercent} Q ${midX} ${midY} ${p2.xPercent} ${p2.yPercent}`
@@ -273,6 +356,63 @@ export class GameWindow {
     }
 
     this.svgLayer.innerHTML = svgContent
+  }
+
+  private renderLudoBoard(): void {
+    this.boardGrid.className = 'game-board-grid ludo-grid'
+    this.boardGrid.innerHTML = ''
+    this.svgLayer.innerHTML = '' // Ludo board is rendered via specialized grid cells
+
+    // 15 rows × 15 cols
+    for (let r = 0; r < 15; r++) {
+      for (let c = 0; c < 15; c++) {
+        const cell = document.createElement('div')
+        cell.className = 'ludo-cell'
+
+        // 1. Quadrant Yards (6x6)
+        if (r < 6 && c < 6) {
+          cell.classList.add('ludo-yard', 'yard-rose')
+          if (r === 2 && (c === 2 || c === 3)) cell.classList.add('yard-nest')
+        } else if (r < 6 && c >= 9) {
+          cell.classList.add('ludo-yard', 'yard-sage')
+          if (r === 2 && (c === 11 || c === 12)) cell.classList.add('yard-nest')
+        } else if (r >= 9 && c >= 9) {
+          cell.classList.add('ludo-yard', 'yard-buttercup')
+          if (r === 11 && (c === 11 || c === 12)) cell.classList.add('yard-nest')
+        } else if (r >= 9 && c < 6) {
+          cell.classList.add('ludo-yard', 'yard-iris')
+          if (r === 11 && (c === 2 || c === 3)) cell.classList.add('yard-nest')
+        }
+        // 2. Center Home Triangle (6..8, 6..8)
+        else if (r >= 6 && r <= 8 && c >= 6 && c <= 8) {
+          cell.classList.add('ludo-home-triangle')
+          if (r === 7 && c === 7) cell.innerHTML = '👑'
+        }
+        // 3. Home Runways
+        else if (r === 7 && c >= 1 && c <= 5) {
+          cell.classList.add('ludo-runway', 'runway-rose')
+        } else if (c === 7 && r >= 1 && r <= 5) {
+          cell.classList.add('ludo-runway', 'runway-sage')
+        } else if (r === 7 && c >= 9 && c <= 13) {
+          cell.classList.add('ludo-runway', 'runway-buttercup')
+        } else if (c === 7 && r >= 9 && r <= 13) {
+          cell.classList.add('ludo-runway', 'runway-iris')
+        }
+        // 4. Track Cells
+        else {
+          cell.classList.add('ludo-track-cell')
+          const trackIdx = LUDO_TRACK.findIndex((coord) => coord.col === c && coord.row === r)
+          if (trackIdx !== -1) {
+            if (SAFE_STAR_TILES.has(trackIdx)) {
+              cell.classList.add('ludo-safe-star')
+              cell.innerHTML = '★'
+            }
+          }
+        }
+
+        this.boardGrid.appendChild(cell)
+      }
+    }
   }
 
   private animateDiceRoll(roll: number): void {
@@ -296,11 +436,18 @@ export class GameWindow {
   }
 
   private updateUI(): void {
-    const state = this.game.getState()
+    if (this.activeTab === 'snakes') {
+      this.updateSnakesUI()
+    } else {
+      this.updateLudoUI()
+    }
+  }
 
-    // 1. Update Turn Banner & Event Log
+  private updateSnakesUI(): void {
+    const state = this.snakesGame.getState()
+
     if (state.players.length === 0) {
-      this.turnBanner.innerHTML = `<span>Connecting to room parlor...</span>`
+      this.turnBanner.innerHTML = `<span>Connecting to parlor room...</span>`
       this.rollBtn.disabled = true
     } else if (state.winnerId) {
       const winner = state.players.find((p) => p.id === state.winnerId)
@@ -321,11 +468,9 @@ export class GameWindow {
       }
     }
 
-    if (state.lastEvent) {
-      this.eventLog.textContent = state.lastEvent
-    }
+    if (state.lastEvent) this.eventLog.textContent = state.lastEvent
 
-    // 2. Render Pawns
+    // Render Pawns
     this.pawnsContainer.innerHTML = ''
     state.players.forEach((player, idx) => {
       const pawn = document.createElement('div')
@@ -334,13 +479,11 @@ export class GameWindow {
       pawn.title = `${player.name} (Tile ${player.position})`
       pawn.innerHTML = `<span>${player.emoji}</span>`
 
-      // Multi-pawn offset on same tile
       const sameTilePlayers = state.players.filter((p) => p.position === player.position)
       const subIdx = sameTilePlayers.findIndex((p) => p.id === player.id)
       const offset = (subIdx - (sameTilePlayers.length - 1) / 2) * 2.5
 
       if (player.position === 0) {
-        // Bench area at bottom
         pawn.style.left = `${10 + idx * 12}%`
         pawn.style.top = `103%`
       } else {
@@ -352,7 +495,7 @@ export class GameWindow {
       this.pawnsContainer.appendChild(pawn)
     })
 
-    // 3. Render Players Roster
+    // Roster
     const playersList = this.card.querySelector('#game-players-list')
     if (playersList) {
       playersList.innerHTML = state.players
@@ -364,6 +507,121 @@ export class GameWindow {
               <span class="badge-emoji">${p.emoji}</span>
               <span class="badge-name">${p.name} ${isYou ? '(You)' : ''}</span>
               <span class="badge-pos">#${p.position}</span>
+            </div>
+          `
+        })
+        .join('')
+    }
+  }
+
+  private updateLudoUI(): void {
+    const state = this.ludoGame.getState()
+
+    if (state.players.length === 0) {
+      this.turnBanner.innerHTML = `<span>Connecting to parlor room...</span>`
+      this.rollBtn.disabled = true
+    } else if (state.winnerId) {
+      const winner = state.players.find((p) => p.id === state.winnerId)
+      this.turnBanner.innerHTML = `<span class="winner-crown">👑 ${winner?.name || 'Someone'} Won Ludo! 🎉</span>`
+      this.rollBtn.disabled = true
+    } else {
+      const activePlayer = state.players[state.activePlayerIndex]
+      const isMyTurn = activePlayer?.id === this.localPlayerId
+
+      if (isMyTurn) {
+        if (state.waitingForTokenSelect) {
+          this.turnBanner.innerHTML = `<span class="your-turn-pill" style="background: ${activePlayer.color}25; border-color: ${activePlayer.color}; color: #fff;">${activePlayer.emoji} Tap a glowing token to move!</span>`
+          this.rollBtn.disabled = true
+          this.rollBtn.classList.remove('pulse')
+        } else {
+          this.turnBanner.innerHTML = `<span class="your-turn-pill" style="background: ${activePlayer.color}25; border-color: ${activePlayer.color}; color: #fff;">${activePlayer.emoji} Your Turn — Roll the Dice!</span>`
+          this.rollBtn.disabled = false
+          this.rollBtn.classList.add('pulse')
+        }
+      } else {
+        this.turnBanner.innerHTML = `<span>${activePlayer?.emoji || '🎲'} ${activePlayer?.name || 'Player'}'s turn...</span>`
+        this.rollBtn.disabled = true
+        this.rollBtn.classList.remove('pulse')
+      }
+    }
+
+    if (state.lastEvent) this.eventLog.textContent = state.lastEvent
+
+    // Render Ludo Tokens
+    this.pawnsContainer.innerHTML = ''
+
+    // Collect all tokens with their positions to detect shared cells for clustering
+    interface RenderedToken {
+      player: (typeof state.players)[0]
+      token: (typeof state.players)[0]['tokens'][0]
+      coord: { col: number; row: number }
+      pIdx: number
+    }
+    const allTokens: RenderedToken[] = []
+    state.players.forEach((player, pIdx) => {
+      player.tokens.forEach((token) => {
+        allTokens.push({
+          player,
+          token,
+          coord: getTokenCoord(pIdx, token),
+          pIdx,
+        })
+      })
+    })
+
+    allTokens.forEach(({ player, token, coord, pIdx }) => {
+      const isActivePlayer = pIdx === state.activePlayerIndex
+      const isLocalActive = isActivePlayer && player.id === this.localPlayerId
+      const isEligible =
+        isLocalActive && state.waitingForTokenSelect && state.eligibleTokenIds.includes(token.id)
+
+      // Calculate cluster offset if sharing cell with other tokens
+      const cellSharedTokens = allTokens.filter(
+        (t) => t.coord.col === coord.col && t.coord.row === coord.row,
+      )
+      const subIdx = cellSharedTokens.findIndex(
+        (t) => t.player.id === player.id && t.token.id === token.id,
+      )
+      const clusterOffset = (subIdx - (cellSharedTokens.length - 1) / 2) * 2.2
+
+      const pawn = document.createElement('div')
+      pawn.className = `game-pawn ludo-pawn pawn-${player.colorName.toLowerCase()} ${isEligible ? 'eligible-token' : ''}`
+      pawn.dataset.color = player.colorName
+
+      // 15x15 percentage center + cluster offset
+      pawn.style.left = `${(coord.col + 0.5) * (100 / 15) + clusterOffset}%`
+      pawn.style.top = `${(coord.row + 0.5) * (100 / 15) + clusterOffset}%`
+      pawn.innerHTML = `<span>${player.emoji}</span>`
+      pawn.title = `${player.name} Token ${token.id + 1} (${token.step === -1 ? 'In Yard' : token.step === 56 ? 'Finished Home!' : `Step ${token.step}`})`
+
+      if (isEligible) {
+        pawn.addEventListener('click', (e) => {
+          e.stopPropagation()
+          if (this.onLudoMoveTokenRequest) {
+            this.onLudoMoveTokenRequest(player.id, token.id)
+          } else {
+            this.ludoGame.moveToken(player.id, token.id)
+            this.updateUI()
+          }
+        })
+      }
+
+      this.pawnsContainer.appendChild(pawn)
+    })
+
+    // Roster
+    const playersList = this.card.querySelector('#game-players-list')
+    if (playersList) {
+      playersList.innerHTML = state.players
+        .map((p, i) => {
+          const isActive = i === state.activePlayerIndex
+          const isYou = p.id === this.localPlayerId
+          const homeTokens = p.tokens.filter((t) => t.step === 56).length
+          return `
+            <div class="player-roster-badge ${isActive ? 'active-player' : ''}" style="border-color: ${p.color}">
+              <span class="badge-emoji">${p.emoji}</span>
+              <span class="badge-name">${p.name} ${isYou ? '(You)' : ''}</span>
+              <span class="badge-pos">${homeTokens}/2 Home</span>
             </div>
           `
         })
